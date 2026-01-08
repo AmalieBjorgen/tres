@@ -132,6 +132,7 @@ export function initializeGame(lobby: Lobby): GameState {
         createdAt: Date.now(),
         turnStartedAt: Date.now(),
         currentDrawStack: 0,
+        podium: [],
     };
 
     return gameState;
@@ -151,10 +152,19 @@ export function getTopCard(game: GameState): Card {
 export function getNextPlayerIndex(game: GameState, skip: number = 0): number {
     const playerCount = game.players.length;
     const increment = game.direction === 'clockwise' ? 1 : -1;
-    let nextIndex = game.currentPlayerIndex + increment * (1 + skip);
+    let nextIndex = game.currentPlayerIndex;
 
-    // Handle wrapping
-    nextIndex = ((nextIndex % playerCount) + playerCount) % playerCount;
+    let activePlayersToSkip = 1 + skip;
+    let iterations = 0;
+
+    while (activePlayersToSkip > 0 && iterations < playerCount) {
+        nextIndex = ((nextIndex + increment) % playerCount + playerCount) % playerCount;
+        const player = game.players[nextIndex];
+        if (!player.rank && !game.podium.includes(player.id)) {
+            activePlayersToSkip--;
+        }
+        iterations++;
+    }
 
     return nextIndex;
 }
@@ -163,16 +173,22 @@ export function getNextPlayerIndex(game: GameState, skip: number = 0): number {
 export function drawCards(game: GameState, count: number): { cards: Card[]; game: GameState } {
     let { drawPile, discardPile } = game;
 
-    // If draw pile is empty, shuffle discard pile (except top card)
+    // If draw pile doesn't have enough cards, reshuffle discard pile
     if (drawPile.length < count) {
         const topCard = discardPile[discardPile.length - 1];
+        // Take all but the top card
         const cardsToShuffle = discardPile.slice(0, -1);
-        drawPile = [...drawPile, ...shuffleDeck(cardsToShuffle)];
-        discardPile = [topCard];
+
+        if (cardsToShuffle.length > 0) {
+            const shuffled = shuffleDeck(cardsToShuffle);
+            drawPile = [...drawPile, ...shuffled];
+            discardPile = [topCard];
+        }
     }
 
-    const drawnCards = drawPile.slice(0, count);
-    const remainingDraw = drawPile.slice(count);
+    const actualDrawCount = Math.min(count, drawPile.length);
+    const drawnCards = drawPile.slice(0, actualDrawCount);
+    const remainingDraw = drawPile.slice(actualDrawCount);
 
     return {
         cards: drawnCards,
@@ -287,10 +303,31 @@ export function playCards(
     };
 
     // Check for win
+    // Check for win/finish
     if (cardPool.length === 0) {
-        newGame.status = 'finished';
-        newGame.winnerId = playerId;
-        return { success: true, game: newGame };
+        if (!newGame.podium.includes(playerId)) {
+            newGame.podium.push(playerId);
+            const rank = newGame.podium.length;
+            newGame.players[game.currentPlayerIndex].rank = rank;
+            if (rank === 1) newGame.winnerId = playerId;
+        }
+
+        // Check if game should end
+        const initialPlayerCount = newGame.players.length;
+        let shouldEnd = false;
+        if (initialPlayerCount <= 2) {
+            shouldEnd = newGame.podium.length >= 1;
+        } else if (initialPlayerCount === 3) {
+            shouldEnd = newGame.podium.length >= 2;
+        } else {
+            // 4 or more players: end when 3 players have finished
+            shouldEnd = newGame.podium.length >= 3;
+        }
+
+        if (shouldEnd) {
+            newGame.status = 'finished';
+            return { success: true, game: newGame };
+        }
     }
 
     // Handle special card effects (only of the LAST card played if multiple)
@@ -548,6 +585,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         turnStartedAt: game.turnStartedAt,
         turnDuration: TURN_DURATION_SECONDS,
         currentDrawStack: game.currentDrawStack,
+        podium: game.podium,
     };
 }
 
