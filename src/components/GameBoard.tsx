@@ -48,13 +48,12 @@ export function GameBoard({
                     tabIndex={isMyTurn ? 0 : undefined}
                     title={isMyTurn ? 'Click to draw a card' : undefined}
                 >
-                    <span className={styles.drawLabel}>Draw</span>
                     <div className={styles.drawPileStack}>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
+                        <div className={styles.drawPileBadge}>{drawPileCount}</div>
                     </div>
-                    <span className={styles.drawPileCount}>{drawPileCount} cards</span>
                 </div>
 
                 <span className={`${styles.directionIndicator} ${styles.directionRight}`}>

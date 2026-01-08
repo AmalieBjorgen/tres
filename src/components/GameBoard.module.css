@@ -24,18 +24,7 @@
     background: var(--bg-secondary);
     border-radius: var(--radius-2xl);
     border: 1px solid var(--border-color);
-    padding: 3rem;
-}
-
-.discardLabel {
-    position: absolute;
-    top: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    padding: 2.5rem;
 }
 
 .currentColorIndicator {
@@ -108,25 +97,23 @@
     transform: translate(4px, 4px);
 }
 
-.drawPileCount {
+.drawPileBadge {
     position: absolute;
-    bottom: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-.drawLabel {
-    position: absolute;
-    top: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    bottom: -10px;
+    right: -10px;
+    background: var(--color-primary);
+    color: white;
+    font-weight: 700;
+    font-size: 0.875rem;
+    min-width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    border: 3px solid var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
 }
 
 /* Direction indicator */
