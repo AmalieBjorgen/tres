@@ -91,20 +91,6 @@ export default function Home() {
         <p className={styles.tagline}>
           The fun multiplayer card game for your Friday game night!
         </p>
-        <div className={styles.featureCards}>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>👥</span>
-            2-15 players
-          </div>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>🌐</span>
-            Play online
-          </div>
-          <div className={styles.featureCard}>
-            <span className={styles.featureIcon}>📱</span>
-            Works on any device
-          </div>
-        </div>
       </div>
 
       <div className={styles.actions}>
@@ -174,35 +160,6 @@ export default function Home() {
         {error && <p className={styles.error}>{error}</p>}
       </div>
 
-      <div className={styles.rules}>
-        <h3 className={styles.rulesTitle}>Quick Rules</h3>
-        <div className={styles.rulesList}>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>🎯</span>
-            Match cards by color or number
-          </div>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>⏭️</span>
-            Skip, Reverse, +2 cards
-          </div>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>🌈</span>
-            Wild cards change color
-          </div>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>🏆</span>
-            First to empty hand wins!
-          </div>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>⚠️</span>
-            Say "TRES" at one card!
-          </div>
-          <div className={styles.ruleItem}>
-            <span className={styles.ruleIcon}>📥</span>
-            Draw if you can&apos;t play
-          </div>
-        </div>
-      </div>
     </main>
   );
 }
