@@ -13,7 +13,7 @@ export async function POST(
         const body = await request.json();
         const { playerId } = body;
 
-        const lobby = gameStore.getLobby(code);
+        const lobby = await gameStore.getLobby(code);
 
         if (!lobby) {
             return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(
 
         // Initialize the game
         const game = initializeGame(lobby);
-        gameStore.setGame(game);
+        await gameStore.setGame(game);
 
         // Broadcast game started event
         await broadcastToLobby(code, 'game-started', {

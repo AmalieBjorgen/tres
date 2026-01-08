@@ -20,7 +20,7 @@ export async function POST(
             );
         }
 
-        const lobby = gameStore.getLobby(code);
+        const lobby = await gameStore.getLobby(code);
 
         if (!lobby) {
             return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(
         }
 
         // Check if game has already started
-        const game = gameStore.getGame(code);
+        const game = await gameStore.getGame(code);
         if (game) {
             return NextResponse.json(
                 { error: 'Game has already started' },
@@ -48,7 +48,7 @@ export async function POST(
             );
         }
 
-        gameStore.setLobby(result.lobby);
+        await gameStore.setLobby(result.lobby);
 
         // Broadcast player joined event
         await broadcastToLobby(code, 'player-joined', {

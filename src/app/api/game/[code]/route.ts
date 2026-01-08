@@ -20,7 +20,7 @@ export async function GET(
             );
         }
 
-        const game = gameStore.getGame(code);
+        const game = await gameStore.getGame(code);
 
         if (!game) {
             return NextResponse.json(
@@ -36,7 +36,7 @@ export async function GET(
             const timeoutResult = handleTurnTimeout(currentGame);
             if (timeoutResult.success) {
                 currentGame = timeoutResult.game;
-                gameStore.setGame(currentGame);
+                await gameStore.setGame(currentGame);
                 // Broadcast the timeout
                 await broadcastToGame(code, 'game-updated', {
                     action: 'timeout',
@@ -69,7 +69,7 @@ export async function POST(
         const body = await request.json();
         const { action, playerId, cardId, chosenColor, targetId } = body;
 
-        const game = gameStore.getGame(code);
+        const game = await gameStore.getGame(code);
 
         if (!game) {
             return NextResponse.json(
@@ -92,7 +92,7 @@ export async function POST(
             const timeoutResult = handleTurnTimeout(currentGame);
             if (timeoutResult.success) {
                 currentGame = timeoutResult.game;
-                gameStore.setGame(currentGame);
+                await gameStore.setGame(currentGame);
                 await broadcastToGame(code, 'game-updated', {
                     action: 'timeout',
                     timestamp: Date.now(),
@@ -143,7 +143,7 @@ export async function POST(
         }
 
         // Save updated game state
-        gameStore.setGame(result.game);
+        await gameStore.setGame(result.game);
 
         // Broadcast game update to all players
         await broadcastToGame(code, 'game-updated', {

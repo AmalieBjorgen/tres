@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         const playerName = body.playerName.trim().substring(0, 20); // Limit name length
         const { lobby, hostId } = createLobby(playerName);
 
-        gameStore.setLobby(lobby);
+        await gameStore.setLobby(lobby);
 
         return NextResponse.json({
             lobby,
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const lobby = gameStore.getLobby(code);
+        const lobby = await gameStore.getLobby(code);
 
         if (!lobby) {
             return NextResponse.json(
