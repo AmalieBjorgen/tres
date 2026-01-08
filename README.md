@@ -1,6 +1,6 @@
 # Tres - Online Multiplayer Card Game
 
-![Tres Logo](file:///home/amalie/Documents/GitHub/tres/src/app/icon.png)
+![Tres Logo](src/app/icon.png)
 
 A real-time, browser-based multiplayer card game inspired by Uno. Built with a focus on smooth animations, mobile accessibility, and real-time synchronization for a great "Friday game night" experience.
 
