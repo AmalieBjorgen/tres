@@ -163,9 +163,14 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .gameBoard {
+        min-height: 280px;
+        padding: var(--spacing-sm);
+    }
+
     .boardCenter {
-        padding: var(--spacing-lg);
-        gap: var(--spacing-lg);
+        padding: var(--spacing-md);
+        gap: var(--spacing-md);
     }
 }
 

@@ -408,32 +408,12 @@ export default function GamePage() {
                         topCard={game.topCard}
                         currentColor={game.currentColor}
                         isMyTurn={game.isMyTurn}
-                        onPlayCard={handlePlaySelected}
-                        selectedCardIds={selectedCardIds}
                         onToggleCard={handleToggleCard}
+                        onPlayAction={handlePlaySelected}
+                        onDrawAction={game.currentDrawStack > 0 ? handleDrawCard : handleDrawThreeSkip}
+                        selectedCardIds={selectedCardIds}
                         currentDrawStack={game.currentDrawStack}
                     />
-
-                    {game.isMyTurn && (
-                        <div className={styles.turnActions}>
-                            <button
-                                className={`btn btn-primary ${styles.playButton}`}
-                                onClick={handlePlaySelected}
-                                disabled={selectedCardIds.length === 0}
-                            >
-                                Play Card{selectedCardIds.length > 1 ? 's' : ''}
-                            </button>
-
-                            {game.currentDrawStack === 0 && (
-                                <button
-                                    className={`btn btn-secondary ${styles.skipButton}`}
-                                    onClick={handleDrawThreeSkip}
-                                >
-                                    Draw 3 & Skip
-                                </button>
-                            )}
-                        </div>
-                    )}
                 </div>
             </main>
 

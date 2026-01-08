@@ -54,7 +54,7 @@
 
 /* Players area at top */
 .playersArea {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
 }
 
 /* Central board area */
@@ -68,8 +68,8 @@
 /* Player's hand at bottom */
 .handArea {
     background: linear-gradient(to top, var(--bg-secondary) 0%, transparent 100%);
-    padding-top: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
     margin: 0 calc(-1 * var(--spacing-md));
     padding-left: var(--spacing-md);
     padding-right: var(--spacing-md);
@@ -222,14 +222,23 @@
 /* Responsive */
 @media (max-width: 768px) {
     .gameHeader {
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-sm);
     }
 
     .gameLogo {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
     }
 
     .gameMain {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-xs);
+    }
+
+    .playersArea {
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .handArea {
+        padding-top: var(--spacing-sm);
+        padding-bottom: 0;
     }
 }

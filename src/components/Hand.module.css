@@ -1,18 +1,28 @@
+.handContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: 0 var(--spacing-md);
+}
+
 .hand {
+    flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: var(--spacing-md);
-    min-height: 200px;
+    min-height: 140px;
     position: relative;
-    gap: var(--spacing-lg);
+    overflow: hidden;
 }
 
 .handCards {
     display: flex;
     justify-content: center;
     position: relative;
+    padding-bottom: var(--spacing-sm);
 }
 
 .handCard {
@@ -28,20 +38,44 @@
     z-index: 10;
 }
 
-/* Fan layout for many cards */
-.handFanned .handCard {
-    margin-left: -35px;
+/* Action Buttons Flanking Hand */
+.actionButton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: 60px;
+    height: 80px;
 }
 
-.handManyCards .handCard {
-    margin-left: -45px;
+.actionButton:hover:not(:disabled) {
+    background: var(--border-light);
+    transform: translateY(-2px);
 }
 
-/* Empty hand message */
-.handEmpty {
-    color: var(--text-muted);
-    font-style: italic;
-    padding: var(--spacing-lg);
+.actionButton:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.playButton {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border: none;
+    box-shadow: var(--shadow-md);
+}
+
+.buttonLabel {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 /* Turn Actions */
@@ -61,47 +95,55 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .handContainer {
+        padding: 0 var(--spacing-sm);
+        gap: var(--spacing-xs);
+    }
+
     .hand {
         overflow-x: auto;
         justify-content: flex-start;
-        padding-bottom: var(--spacing-xl);
-        /* Space for scrollbar */
+        padding-bottom: var(--spacing-md);
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        /* Hide scrollbar for Firefox */
     }
 
     .hand::-webkit-scrollbar {
         display: none;
-        /* Hide scrollbar for Chrome/Safari */
     }
 
     .handCards {
         justify-content: flex-start;
-        padding: 0 var(--spacing-xl);
+        padding: 0 var(--spacing-md);
         min-width: max-content;
     }
 
     .handCard {
-        margin-left: -35px;
-    }
-
-    .handFanned .handCard {
         margin-left: -45px;
     }
 
-    .handManyCards .handCard {
+    .handFanned .handCard {
         margin-left: -55px;
+    }
+
+    .handManyCards .handCard {
+        margin-left: -60px;
+    }
+
+    .actionButton {
+        min-width: 50px;
+        height: 70px;
+        padding: var(--spacing-xs);
     }
 }
 
 @media (max-width: 480px) {
     .handCard {
-        margin-left: -40px;
+        margin-left: -50px;
     }
 
     .handFanned .handCard,
     .handManyCards .handCard {
-        margin-left: -50px;
+        margin-left: -55px;
     }
 }
