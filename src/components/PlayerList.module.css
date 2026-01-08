@@ -110,6 +110,20 @@
     }
 }
 
+.rankBadge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-left: var(--spacing-sm);
+}
+
 /* Challenge button */
 .challengeButton {
     padding: 2px 6px;

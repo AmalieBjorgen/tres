@@ -431,19 +431,27 @@ export default function GamePage() {
                 <div className={styles.actionMessage}>{actionMessage}</div>
             )}
 
-            {winner && (
+            {game.status === 'finished' && (
                 <div className={styles.winnerOverlay}>
                     <div className={styles.winnerContent}>
-                        <div className={styles.winnerEmoji}>🎉</div>
-                        <h2 className={styles.winnerTitle}>
-                            {winner.id === playerId ? 'You Win!' : 'Game Over!'}
-                        </h2>
-                        <p className={styles.winnerName}>
-                            {winner.name} wins the game!
-                        </p>
+                        <div className={styles.winnerEmoji}>🏆</div>
+                        <h2 className={styles.winnerTitle}>Game Over!</h2>
+                        <div className={styles.podiumList}>
+                            {game.podium.map((pId, index) => {
+                                const p = game.players.find((player) => player.id === pId);
+                                return (
+                                    <div key={pId} className={`${styles.podiumItem} ${pId === playerId ? styles.podiumMe : ''}`}>
+                                        <span className={styles.podiumRank}>
+                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                        </span>
+                                        <span className={styles.podiumName}>{p?.name}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                         <div className={styles.winnerActions}>
                             <Link href="/" className="btn btn-primary btn-lg">
-                                Play Again
+                                Back to Main Menu
                             </Link>
                         </div>
                     </div>

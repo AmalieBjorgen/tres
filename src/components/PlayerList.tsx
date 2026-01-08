@@ -51,6 +51,12 @@ export function PlayerList({
                                 {player.hasSaidTres && player.cardCount === 1 && (
                                     <span className={styles.tresBadge}>TRES!</span>
                                 )}
+                                {player.rank && (
+                                    <span className={styles.rankBadge}>
+                                        {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : `#${player.rank}`}
+                                        Rank {player.rank}
+                                    </span>
+                                )}
                                 {canChallenge && (
                                     <button
                                         className={styles.challengeButton}
