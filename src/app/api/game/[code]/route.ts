@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gameStore } from '@/lib/gameStore';
-import { getClientGameState, playCard, drawCardAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
+import { getClientGameState, playCards, drawCardAction, drawThreeSkipAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
 import { broadcastToGame } from '@/lib/pusher';
 import { CardColor } from '@/lib/types';
 
@@ -67,7 +67,7 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { action, playerId, cardId, chosenColor, targetId } = body;
+        const { action, playerId, cardId, cardIds, chosenColor, targetId } = body;
 
         const game = await gameStore.getGame(code);
 
@@ -104,11 +104,16 @@ export async function POST(
 
         switch (action) {
             case 'play_card':
-                result = playCard(currentGame, playerId, cardId, chosenColor as CardColor);
+                const ids = cardIds || (cardId ? [cardId] : []);
+                result = playCards(currentGame, playerId, ids, chosenColor as CardColor);
                 break;
 
             case 'draw_card':
                 result = drawCardAction(currentGame, playerId);
+                break;
+
+            case 'draw_three_skip':
+                result = drawThreeSkipAction(currentGame, playerId);
                 break;
 
             case 'say_tres':

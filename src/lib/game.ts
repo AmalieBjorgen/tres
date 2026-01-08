@@ -131,6 +131,7 @@ export function initializeGame(lobby: Lobby): GameState {
         lastAction: null,
         createdAt: Date.now(),
         turnStartedAt: Date.now(),
+        currentDrawStack: 0,
     };
 
     return gameState;
@@ -183,51 +184,91 @@ export function drawCards(game: GameState, count: number): { cards: Card[]; game
     };
 }
 
-// Play a card
-export function playCard(
+// Play one or more cards
+export function playCards(
     game: GameState,
     playerId: string,
-    cardId: string,
+    cardIds: string[],
     chosenColor?: CardColor
 ): { success: boolean; game: GameState; error?: string } {
+    if (cardIds.length === 0) {
+        return { success: false, game, error: 'No cards selected' };
+    }
+
     // Validate it's the player's turn
     const currentPlayer = getCurrentPlayer(game);
     if (currentPlayer.id !== playerId) {
         return { success: false, game, error: 'Not your turn' };
     }
 
-    // Find the card in player's hand
-    const cardIndex = currentPlayer.hand.findIndex((c) => c.id === cardId);
-    if (cardIndex === -1) {
-        return { success: false, game, error: 'Card not in hand' };
+    // Find all cards in player's hand
+    const cardsToPlay: Card[] = [];
+    const cardPool = [...currentPlayer.hand];
+
+    for (const cardId of cardIds) {
+        const index = cardPool.findIndex(c => c.id === cardId);
+        if (index === -1) {
+            return { success: false, game, error: 'Card not in hand' };
+        }
+        cardsToPlay.push(cardPool[index]);
+        cardPool.splice(index, 1);
     }
 
-    const card = currentPlayer.hand[cardIndex];
+    const firstCard = cardsToPlay[0];
     const topCard = getTopCard(game);
 
-    // Validate the card can be played
-    if (!canPlayCard(card, topCard, game.currentColor)) {
-        return { success: false, game, error: 'Cannot play this card' };
+    // 1. Handle Stacking Logic
+    if (game.currentDrawStack > 0) {
+        // Must stack either +2 on +2 or +4 on +4
+        if (topCard.type === 'draw_two') {
+            if (firstCard.type !== 'draw_two' || cardsToPlay.length > 1) {
+                return { success: false, game, error: 'Must play a single +2 to stack' };
+            }
+        } else if (topCard.type === 'wild_draw_four') {
+            if (firstCard.type !== 'wild_draw_four' || cardsToPlay.length > 1) {
+                return { success: false, game, error: 'Must play a single +4 to stack' };
+            }
+        }
+    }
+
+    // 2. Handle Multi-Card Play Logic
+    if (cardsToPlay.length > 1) {
+        // Can only multi-play numeric cards of same value
+        if (!cardsToPlay.every(c => c.type === 'number' && c.value === firstCard.value)) {
+            return { success: false, game, error: 'Can only play multiple cards of the same number' };
+        }
+    }
+
+    // 3. Validate first card is playable normally (if not stacking)
+    if (game.currentDrawStack === 0) {
+        if (!canPlayCard(firstCard, topCard, game.currentColor)) {
+            return { success: false, game, error: 'First card is not playable' };
+        }
     }
 
     // For wild cards, require a color choice
-    if (isWildCard(card) && !chosenColor) {
+    if (isWildCard(firstCard) && !chosenColor) {
         return { success: false, game, error: 'Must choose a color for wild card' };
     }
 
-    // Remove card from player's hand
-    const newHand = [...currentPlayer.hand];
-    newHand.splice(cardIndex, 1);
-
+    // Remove cards from player's hand
     const updatedPlayers = game.players.map((p) =>
-        p.id === playerId ? { ...p, hand: newHand, hasSaidTres: false } : p
+        p.id === playerId ? { ...p, hand: cardPool, hasSaidTres: false } : p
     );
 
-    // Add card to discard pile
-    const newDiscardPile = [...game.discardPile, card];
+    // Add cards to discard pile (in order played)
+    const newDiscardPile = [...game.discardPile, ...cardsToPlay];
 
-    // Determine new color
-    const newColor = isWildCard(card) ? chosenColor! : card.color!;
+    // Determine new color from the LAST card played
+    const lastCard = cardsToPlay[cardsToPlay.length - 1];
+    const newColor = isWildCard(lastCard) ? chosenColor! : lastCard.color!;
+
+    // Accumulate draw stack
+    let newDrawStack = game.currentDrawStack;
+    for (const card of cardsToPlay) {
+        if (card.type === 'draw_two') newDrawStack += 2;
+        if (card.type === 'wild_draw_four') newDrawStack += 4;
+    }
 
     // Apply card effects
     let newGame: GameState = {
@@ -235,33 +276,32 @@ export function playCard(
         players: updatedPlayers,
         discardPile: newDiscardPile,
         currentColor: newColor,
+        currentDrawStack: newDrawStack,
         lastAction: {
             type: 'play_card',
             playerId,
-            cardId,
+            cardIds,
             chosenColor,
             timestamp: Date.now(),
         },
     };
 
     // Check for win
-    if (newHand.length === 0) {
+    if (cardPool.length === 0) {
         newGame.status = 'finished';
         newGame.winnerId = playerId;
         return { success: true, game: newGame };
     }
 
-    // Handle special card effects
-    switch (card.type) {
+    // Handle special card effects (only of the LAST card played if multiple)
+    // However, for multi-play only numbers are allowed, so this applies primarily to single plays
+    switch (lastCard.type) {
         case 'skip':
-            // Skip next player
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
             break;
 
         case 'reverse':
-            // Reverse direction
             newGame.direction = newGame.direction === 'clockwise' ? 'counter_clockwise' : 'clockwise';
-            // In 2-player game, reverse acts like skip
             if (newGame.players.length === 2) {
                 newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
             } else {
@@ -269,42 +309,31 @@ export function playCard(
             }
             break;
 
-        case 'draw_two': {
-            // Next player draws 2 and loses turn
-            const nextIndex = getNextPlayerIndex(newGame);
-            const { cards: drawnCards, game: afterDraw } = drawCards(newGame, 2);
-            newGame = afterDraw;
-            newGame.players = newGame.players.map((p, i) =>
-                i === nextIndex ? { ...p, hand: [...p.hand, ...drawnCards] } : p
-            );
-            newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
+        case 'draw_two':
+        case 'wild_draw_four':
+            // Stacking is handled above. Move turn to next player who must stack or draw.
+            newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
             break;
-        }
-
-        case 'wild_draw_four': {
-            // Next player draws 4 and loses turn
-            const nextIndex = getNextPlayerIndex(newGame);
-            const { cards: drawnCards, game: afterDraw } = drawCards(newGame, 4);
-            newGame = afterDraw;
-            newGame.players = newGame.players.map((p, i) =>
-                i === nextIndex ? { ...p, hand: [...p.hand, ...drawnCards] } : p
-            );
-            newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
-            break;
-        }
 
         default:
-            // Normal move to next player
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
     }
 
-    // Reset turn timer for next player
     newGame.turnStartedAt = Date.now();
-
     return { success: true, game: newGame };
 }
 
-// Draw cards (when player can't play)
+// Keeping playCard for backward compatibility if needed, but routing to playCards
+export function playCard(
+    game: GameState,
+    playerId: string,
+    cardId: string,
+    chosenColor?: CardColor
+): { success: boolean; game: GameState; error?: string } {
+    return playCards(game, playerId, [cardId], chosenColor);
+}
+
+// Draw cards (when player can't play or chooses to draw)
 export function drawCardAction(
     game: GameState,
     playerId: string
@@ -314,13 +343,39 @@ export function drawCardAction(
         return { success: false, game, error: 'Not your turn' };
     }
 
+    let currentGameState = game;
+    let accumulatedDrawnCards: Card[] = [];
+
+    // 1. If there's a stacking penalty, the player MUST draw the stack
+    if (game.currentDrawStack > 0) {
+        const { cards, game: stateAfterDraw } = drawCards(game, game.currentDrawStack);
+        accumulatedDrawnCards = cards;
+        currentGameState = stateAfterDraw;
+
+        const updatedPlayers = currentGameState.players.map((p) =>
+            p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
+        );
+
+        const newGame: GameState = {
+            ...currentGameState,
+            players: updatedPlayers,
+            currentDrawStack: 0, // Reset stack
+            currentPlayerIndex: getNextPlayerIndex(currentGameState),
+            turnStartedAt: Date.now(),
+            lastAction: {
+                type: 'draw_card',
+                playerId,
+                cardCount: accumulatedDrawnCards.length,
+                timestamp: Date.now(),
+            },
+        };
+        return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
+    }
+
+    // 2. Normal draw (draw up to 3 or until a playable one is found)
     const topCard = getTopCard(game);
     const { currentColor } = game;
 
-    let currentGameState = game;
-    const accumulatedDrawnCards: Card[] = [];
-
-    // Draw up to 3 cards or until a playable one is found
     for (let i = 0; i < 3; i++) {
         const { cards, game: stateAfterDraw } = drawCards(currentGameState, 1);
         if (cards.length === 0) break;
@@ -329,7 +384,6 @@ export function drawCardAction(
         accumulatedDrawnCards.push(drawnCard);
         currentGameState = stateAfterDraw;
 
-        // If the card is playable, we stop drawing
         if (canPlayCard(drawnCard, topCard, currentColor)) {
             break;
         }
@@ -339,12 +393,10 @@ export function drawCardAction(
         return { success: false, game, error: 'No cards to draw' };
     }
 
-    // Add cards to player's hand
     const updatedPlayers = currentGameState.players.map((p) =>
         p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
     );
 
-    // Move to next player and reset turn timer
     const newGame: GameState = {
         ...currentGameState,
         players: updatedPlayers,
@@ -352,6 +404,43 @@ export function drawCardAction(
         turnStartedAt: Date.now(),
         lastAction: {
             type: 'draw_card',
+            playerId,
+            cardCount: accumulatedDrawnCards.length,
+            timestamp: Date.now(),
+        },
+    };
+
+    return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
+}
+
+// Special action: Draw 3 and skip turn
+export function drawThreeSkipAction(
+    game: GameState,
+    playerId: string
+): { success: boolean; game: GameState; drawnCards?: Card[]; error?: string } {
+    const currentPlayer = getCurrentPlayer(game);
+    if (currentPlayer.id !== playerId) {
+        return { success: false, game, error: 'Not your turn' };
+    }
+
+    // If there's a stack, they should use drawCardAction to draw the stack instead
+    if (game.currentDrawStack > 0) {
+        return drawCardAction(game, playerId);
+    }
+
+    const { cards: accumulatedDrawnCards, game: currentGameState } = drawCards(game, 3);
+
+    const updatedPlayers = currentGameState.players.map((p) =>
+        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
+    );
+
+    const newGame: GameState = {
+        ...currentGameState,
+        players: updatedPlayers,
+        currentPlayerIndex: getNextPlayerIndex(currentGameState),
+        turnStartedAt: Date.now(),
+        lastAction: {
+            type: 'draw_three_skip',
             playerId,
             cardCount: accumulatedDrawnCards.length,
             timestamp: Date.now(),
@@ -458,6 +547,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         isMyTurn: game.currentPlayerIndex === playerIndex,
         turnStartedAt: game.turnStartedAt,
         turnDuration: TURN_DURATION_SECONDS,
+        currentDrawStack: game.currentDrawStack,
     };
 }
 
@@ -490,9 +580,10 @@ export function handleTurnTimeout(
         lastAction: {
             type: 'draw_card',
             playerId: currentPlayer.id,
-            cardCount: 5,
+            cardCount: 5 + game.currentDrawStack,
             timestamp: Date.now(),
         },
+        currentDrawStack: 0, // Reset stack
     };
 
     return { success: true, game: newGame };

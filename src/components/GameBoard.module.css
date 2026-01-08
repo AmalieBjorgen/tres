@@ -168,3 +168,20 @@
         gap: var(--spacing-lg);
     }
 }
+
+.stackWarning {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-red);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-lg);
+    border-radius: var(--radius-full);
+    font-weight: 800;
+    font-size: 1rem;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+    animation: bounce 1s infinite alternate;
+    white-space: nowrap;
+    z-index: 20;
+}

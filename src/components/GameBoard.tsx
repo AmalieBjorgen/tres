@@ -12,6 +12,7 @@ interface GameBoardProps {
     currentPlayerName: string;
     isMyTurn: boolean;
     onDrawCard: () => void;
+    currentDrawStack: number;
 }
 
 export function GameBoard({
@@ -22,6 +23,7 @@ export function GameBoard({
     currentPlayerName,
     isMyTurn,
     onDrawCard,
+    currentDrawStack,
 }: GameBoardProps) {
     return (
         <div className={styles.gameBoard}>
@@ -46,7 +48,7 @@ export function GameBoard({
                     onClick={isMyTurn ? onDrawCard : undefined}
                     role={isMyTurn ? 'button' : undefined}
                     tabIndex={isMyTurn ? 0 : undefined}
-                    title={isMyTurn ? 'Click to draw a card' : undefined}
+                    title={isMyTurn ? (currentDrawStack > 0 ? `Draw ${currentDrawStack} cards penalty` : 'Click to draw a card') : undefined}
                 >
                     <div className={styles.drawPileStack}>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
@@ -55,6 +57,12 @@ export function GameBoard({
                         <div className={styles.drawPileBadge}>{drawPileCount}</div>
                     </div>
                 </div>
+
+                {currentDrawStack > 0 && (
+                    <div className={styles.stackWarning}>
+                        +{currentDrawStack} stack!
+                    </div>
+                )}
 
                 <span className={`${styles.directionIndicator} ${styles.directionRight}`}>
                     {direction === 'clockwise' ? '→' : ''}

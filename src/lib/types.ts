@@ -45,6 +45,7 @@ export interface GameState {
     lastAction: GameAction | null;
     createdAt: number;
     turnStartedAt: number; // Timestamp when current turn started
+    currentDrawStack: number; // Accumulated cards to draw from stacking (+2/+4)
 }
 
 // Lobby (waiting room before game starts)
@@ -70,12 +71,14 @@ export type GameActionType =
     | 'draw_card'
     | 'say_tres'
     | 'challenge_tres'
-    | 'choose_color';
+    | 'choose_color'
+    | 'draw_three_skip';
 
 export interface GameAction {
     type: GameActionType;
     playerId: string;
-    cardId?: string;
+    cardId?: string; // For single card actions
+    cardIds?: string[]; // For multi-card plays
     chosenColor?: CardColor;
     cardCount?: number;
     timestamp: number;
@@ -102,7 +105,8 @@ export interface JoinLobbyResponse {
 
 export interface PlayCardRequest {
     playerId: string;
-    cardId: string;
+    cardId?: string; // Keeping for backward compatibility or singular use
+    cardIds?: string[]; // New field for multi-card play
     chosenColor?: CardColor;
 }
 
@@ -148,6 +152,7 @@ export interface ClientGameState {
     isMyTurn: boolean;
     turnStartedAt: number; // Timestamp when current turn started
     turnDuration: number; // Turn duration in seconds
+    currentDrawStack: number;
 }
 
 export interface ClientPlayer {
