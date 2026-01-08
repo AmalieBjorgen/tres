@@ -73,7 +73,19 @@ export function Hand({
             <div className={styles.hand}>
                 <div className={`${styles.handCards} ${handClass}`}>
                     {cards.map((card) => {
+                        const isSelected = selectedCardIds.includes(card.id);
                         let isPlayable = isMyTurn && canPlayCard(card, topCard, currentColor);
+
+                        // Broaden playability for multi-selection:
+                        // If we already have cards selected, allow selecting other cards with the same number
+                        if (isMyTurn && selectedCardIds.length > 0) {
+                            const firstSelectedId = selectedCardIds[0];
+                            const firstSelectedCard = cards.find(c => c.id === firstSelectedId);
+
+                            if (firstSelectedCard?.type === 'number' && card.type === 'number' && firstSelectedCard.value === card.value) {
+                                isPlayable = true;
+                            }
+                        }
 
                         // If stacking, refine playable status
                         if (isMyTurn && currentDrawStack > 0) {
@@ -83,8 +95,6 @@ export function Hand({
                                 isPlayable = card.type === 'wild_draw_four';
                             }
                         }
-
-                        const isSelected = selectedCardIds.includes(card.id);
 
                         return (
                             <div key={card.id} className={styles.handCard}>
