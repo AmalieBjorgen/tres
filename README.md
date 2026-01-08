@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tres - Online Multiplayer Card Game
 
-## Getting Started
+![Tres Logo](file:///home/amalie/Documents/GitHub/tres/src/app/icon.png)
 
-First, run the development server:
+A real-time, browser-based multiplayer card game inspired by Uno. Built with a focus on smooth animations, mobile accessibility, and real-time synchronization for a great "Friday game night" experience.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Framework**: [Next.js 15+](https://nextjs.org) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org)
+- **Styling**: Vanilla CSS with [CSS Modules](https://github.com/css-modules/css-modules)
+- **Real-time**: [Pusher](https://pusher.com) (Serverless WebSockets)
+- **Persistence**: [Upstash Redis](https://upstash.com) (Serverless State Management)
+- **Deployment**: [Vercel](https://vercel.com)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📦 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/`: Next.js App Router pages and API routes.
+  - `/api/game/`: Core game action endpoints (play, draw, call Tres).
+  - `/api/lobby/`: Session management (create, join, start).
+- `src/components/`: Reusable React components.
+  - `Card.tsx`: Optimized card rendering with flip/draw/play animations.
+  - `Hand.tsx`: Interactive player hand with mobile-first fanning and ghost card logic.
+  - `ActionLog.tsx`: Real-time history sidebar.
+- `src/lib/`: Backend-agnostic game logic and utilities.
+  - `game.ts`: The "TRES" engine (rules, turn management, stacking logic).
+  - `gameStore.ts`: Redis-backed state persistence for serverless environments.
 
-## Learn More
+## 🛠️ Local Development
 
-To learn more about Next.js, take a look at the following resources:
+### Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Node.js](https://nodejs.org/) (v18+)
+- [npm](https://www.npmjs.com/) (recommended) or any modern package manager (Bun/pnpm/yarn)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Setup
 
-## Deploy on Vercel
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/AmalieBjorgen/tres.git
+   cd tres
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Environment Variables**:
+   Create a `.env.local` file in the root and add your credentials:
+   ```env
+   # Pusher (pusher.com)
+   PUSHER_APP_ID=xxx
+   PUSHER_KEY=xxx
+   PUSHER_SECRET=xxx
+   PUSHER_CLUSTER=xxx
+   NEXT_PUBLIC_PUSHER_KEY=xxx
+   NEXT_PUBLIC_PUSHER_CLUSTER=xxx
+
+   # Redis (upstash.com)
+   UPSTASH_REDIS_REST_URL=xxx
+   UPSTASH_REDIS_REST_TOKEN=xxx
+   ```
+
+4. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Open the game**:
+   Navigate to [http://localhost:3000](http://localhost:3000).
+
+## 🎮 Game Features
+
+- **Multiplayer**: Support for 2-15 players with real-time sync.
+- **Stacking Rules**: Cascade +2 and +4 penalties to double the fun (or pain).
+- **Multi-Card Play**: Play multiple cards of the same number in a single turn.
+- **Action History**: Track every move with a dedicated history log.
+- **Podium System**: 1st, 2nd, and 3rd place finishes tracked and celebrated.
+- **Resilient State**: Game state persists across serverless refreshes and brief disconnections.
+
+---
+
+Built for Friday game nights. 🃏✨
