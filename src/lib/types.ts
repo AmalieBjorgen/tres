@@ -48,6 +48,7 @@ export interface GameState {
     turnStartedAt: number; // Timestamp when current turn started
     currentDrawStack: number; // Accumulated cards to draw from stacking (+2/+4)
     podium: string[]; // Ordered list of player IDs who finished
+    actionHistory: GameAction[]; // List of historical actions
 }
 
 // Lobby (waiting room before game starts)
@@ -156,6 +157,7 @@ export interface ClientGameState {
     turnDuration: number; // Turn duration in seconds
     currentDrawStack: number;
     podium: string[];
+    actionHistory: GameAction[];
 }
 
 export interface ClientPlayer {

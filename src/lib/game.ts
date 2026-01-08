@@ -133,9 +133,22 @@ export function initializeGame(lobby: Lobby): GameState {
         turnStartedAt: Date.now(),
         currentDrawStack: 0,
         podium: [],
+        actionHistory: [],
     };
 
     return gameState;
+}
+
+/**
+ * Adds an action to the game history and keeps it within limits
+ */
+function recordAction(game: GameState, action: GameAction): GameState {
+    const actionHistory = [action, ...(game.actionHistory || [])].slice(0, 50);
+    return {
+        ...game,
+        lastAction: action,
+        actionHistory,
+    };
 }
 
 // Get the current player
@@ -293,14 +306,17 @@ export function playCards(
         discardPile: newDiscardPile,
         currentColor: newColor,
         currentDrawStack: newDrawStack,
-        lastAction: {
-            type: 'play_card',
-            playerId,
-            cardIds,
-            chosenColor,
-            timestamp: Date.now(),
-        },
     };
+
+    const action: GameAction = {
+        type: 'play_card',
+        playerId,
+        cardIds,
+        chosenColor,
+        timestamp: Date.now(),
+    };
+
+    newGame = recordAction(newGame, action);
 
     // Check for win
     // Check for win/finish
@@ -399,14 +415,16 @@ export function drawCardAction(
             currentDrawStack: 0, // Reset stack
             currentPlayerIndex: getNextPlayerIndex(currentGameState),
             turnStartedAt: Date.now(),
-            lastAction: {
-                type: 'draw_card',
-                playerId,
-                cardCount: accumulatedDrawnCards.length,
-                timestamp: Date.now(),
-            },
         };
-        return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
+
+        const action: GameAction = {
+            type: 'draw_card',
+            playerId,
+            cardCount: accumulatedDrawnCards.length,
+            timestamp: Date.now(),
+        };
+
+        return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
     }
 
     // 2. Normal draw (draw up to 3 or until a playable one is found)
@@ -439,13 +457,16 @@ export function drawCardAction(
         players: updatedPlayers,
         currentPlayerIndex: getNextPlayerIndex(currentGameState),
         turnStartedAt: Date.now(),
-        lastAction: {
-            type: 'draw_card',
-            playerId,
-            cardCount: accumulatedDrawnCards.length,
-            timestamp: Date.now(),
-        },
     };
+
+    const action: GameAction = {
+        type: 'draw_card',
+        playerId,
+        cardCount: accumulatedDrawnCards.length,
+        timestamp: Date.now(),
+    };
+
+    return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
 
     return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
 }
@@ -476,13 +497,16 @@ export function drawThreeSkipAction(
         players: updatedPlayers,
         currentPlayerIndex: getNextPlayerIndex(currentGameState),
         turnStartedAt: Date.now(),
-        lastAction: {
-            type: 'draw_three_skip',
-            playerId,
-            cardCount: accumulatedDrawnCards.length,
-            timestamp: Date.now(),
-        },
     };
+
+    const action: GameAction = {
+        type: 'draw_three_skip',
+        playerId,
+        cardCount: accumulatedDrawnCards.length,
+        timestamp: Date.now(),
+    };
+
+    return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
 
     return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
 }
@@ -505,17 +529,15 @@ export function sayTres(
         p.id === playerId ? { ...p, hasSaidTres: true } : p
     );
 
+    const action: GameAction = {
+        type: 'say_tres',
+        playerId,
+        timestamp: Date.now(),
+    };
+
     return {
         success: true,
-        game: {
-            ...game,
-            players: updatedPlayers,
-            lastAction: {
-                type: 'say_tres',
-                playerId,
-                timestamp: Date.now(),
-            },
-        },
+        game: recordAction({ ...game, players: updatedPlayers }, action),
     };
 }
 
@@ -541,17 +563,15 @@ export function challengeTres(
         p.id === targetId ? { ...p, hand: [...p.hand, ...drawnCards] } : p
     );
 
+    const action: GameAction = {
+        type: 'challenge_tres',
+        playerId: challengerId,
+        timestamp: Date.now(),
+    };
+
     return {
         success: true,
-        game: {
-            ...afterDraw,
-            players: updatedPlayers,
-            lastAction: {
-                type: 'challenge_tres',
-                playerId: challengerId,
-                timestamp: Date.now(),
-            },
-        },
+        game: recordAction({ ...afterDraw, players: updatedPlayers }, action),
     };
 }
 
@@ -587,6 +607,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         turnDuration: TURN_DURATION_SECONDS,
         currentDrawStack: game.currentDrawStack,
         podium: game.podium,
+        actionHistory: game.actionHistory || [],
     };
 }
 
@@ -611,21 +632,22 @@ export function handleTurnTimeout(
     );
 
     // Move to next player and reset turn timer
-    const newGame: GameState = {
+    const newGameState: GameState = {
         ...afterDraw,
         players: updatedPlayers,
         currentPlayerIndex: getNextPlayerIndex(afterDraw),
         turnStartedAt: Date.now(),
-        lastAction: {
-            type: 'draw_card',
-            playerId: currentPlayer.id,
-            cardCount: 5 + game.currentDrawStack,
-            timestamp: Date.now(),
-        },
         currentDrawStack: 0, // Reset stack
     };
 
-    return { success: true, game: newGame };
+    const action: GameAction = {
+        type: 'draw_card',
+        playerId: currentPlayer.id,
+        cardCount: 5 + game.currentDrawStack,
+        timestamp: Date.now(),
+    };
+
+    return { success: true, game: recordAction(newGameState, action) };
 }
 
 // Check if current turn has timed out

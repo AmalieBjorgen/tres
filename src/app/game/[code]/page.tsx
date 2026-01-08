@@ -8,10 +8,11 @@ import { isWildCard } from '@/lib/cards';
 import { subscribeToGame } from '@/lib/pusherClient';
 import { GameBoard } from '@/components/GameBoard';
 import { Hand } from '@/components/Hand';
+import { TurnTimer } from '@/components/TurnTimer';
 import { PlayerList } from '@/components/PlayerList';
 import { ColorPicker } from '@/components/ColorPicker';
 import { TresButton } from '@/components/TresButton';
-import { TurnTimer } from '@/components/TurnTimer';
+import { ActionLog } from '@/components/ActionLog';
 import styles from './page.module.css';
 
 export default function GamePage() {
@@ -27,6 +28,7 @@ export default function GamePage() {
     const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
     const [playingCardIds, setPlayingCardIds] = useState<string[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
+    const [showHistory, setShowHistory] = useState(false);
     const timeoutTriggeredRef = useRef<number | null>(null);
 
     const fetchGame = useCallback(async (pid: string) => {
@@ -377,35 +379,60 @@ export default function GamePage() {
                     isMyTurn={game.isMyTurn}
                     onTimeout={handleTimeout}
                 />
-                <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={handleLeaveGame}
-                >
-                    Leave Game
-                </button>
+                <div className={styles.headerRight}>
+                    <button
+                        className={`${styles.historyToggle} ${showHistory ? styles.historyToggleActive : ''}`}
+                        onClick={() => setShowHistory(!showHistory)}
+                        title="Action History"
+                    >
+                        📜
+                    </button>
+                    <TresButton
+                        canSayTres={canSayTres}
+                        hasSaidTres={hasSaidTres}
+                        onClick={handleSayTres}
+                    />
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={handleLeaveGame}
+                    >
+                        Leave Game
+                    </button>
+                </div>
             </header>
 
             <main className={styles.gameMain}>
-                <div className={styles.playersArea}>
-                    <PlayerList
-                        players={game.players}
-                        currentPlayerIndex={game.currentPlayerIndex}
-                        myId={playerId}
-                        onChallenge={handleChallenge}
-                    />
-                </div>
+                <div className={styles.gameLayout}>
+                    <div className={styles.gameContent}>
+                        <div className={styles.playersArea}>
+                            <PlayerList
+                                players={game.players}
+                                currentPlayerIndex={game.currentPlayerIndex}
+                                myId={playerId}
+                                onChallenge={handleChallenge}
+                            />
+                        </div>
 
-                <div className={styles.boardArea}>
-                    <GameBoard
-                        topCard={game.topCard}
-                        currentColor={game.currentColor}
-                        drawPileCount={game.drawPileCount}
-                        direction={game.direction}
-                        currentPlayerName={currentPlayer.name}
-                        isMyTurn={game.isMyTurn}
-                        onDrawCard={handleDrawCard}
-                        currentDrawStack={game.currentDrawStack}
-                    />
+                        <div className={styles.boardArea}>
+                            <GameBoard
+                                topCard={game.topCard}
+                                currentColor={game.currentColor}
+                                drawPileCount={game.drawPileCount}
+                                direction={game.direction}
+                                currentPlayerName={currentPlayer.name}
+                                isMyTurn={game.isMyTurn}
+                                onDrawCard={handleDrawCard}
+                                currentDrawStack={game.currentDrawStack}
+                            />
+                        </div>
+                    </div>
+
+                    <aside className={`${styles.gameSidebar} ${showHistory ? styles.sidebarOpen : ''}`}>
+                        <div className={styles.sidebarOverlay} onClick={() => setShowHistory(false)} />
+                        <div className={styles.sidebarContent}>
+                            <ActionLog history={game.actionHistory || []} players={game.players} />
+                        </div>
+                    </aside>
                 </div>
 
                 <div className={styles.handArea}>
@@ -424,11 +451,6 @@ export default function GamePage() {
                 </div>
             </main>
 
-            <TresButton
-                canSayTres={canSayTres}
-                hasSaidTres={hasSaidTres}
-                onClick={handleSayTres}
-            />
 
             {showColorPicker && (
                 <ColorPicker onSelect={handleColorSelected} />
