@@ -57,6 +57,7 @@ export function Hand({
         if (addedCardIds.size > 0) {
             setNewCardIds(addedCardIds);
             const timer = setTimeout(() => setNewCardIds(new Set()), 600);
+            prevCardIdsRef.current = currentCardIds; // Update here too
             return () => clearTimeout(timer);
         }
 
