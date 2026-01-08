@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { Card as CardType, CardColor, GameDirection } from '@/lib/types';
 import { Card } from './Card';
 import styles from './GameBoard.module.css';
@@ -25,6 +26,18 @@ export function GameBoard({
     onDrawCard,
     currentDrawStack,
 }: GameBoardProps) {
+    const [animateTop, setAnimateTop] = useState(false);
+    const lastTopRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (lastTopRef.current && lastTopRef.current !== topCard.id) {
+            setAnimateTop(true);
+            const timer = setTimeout(() => setAnimateTop(false), 400);
+            return () => clearTimeout(timer);
+        }
+        lastTopRef.current = topCard.id;
+    }, [topCard.id]);
+
     return (
         <div className={styles.gameBoard}>
             <div className={`${styles.turnIndicator} ${isMyTurn ? styles.turnIndicatorActive : ''}`}>
@@ -39,7 +52,7 @@ export function GameBoard({
 
                 {/* Discard pile */}
                 <div className={styles.discardPile}>
-                    <Card card={topCard} />
+                    <Card card={topCard} drawing={animateTop} />
                 </div>
 
                 {/* Draw pile */}

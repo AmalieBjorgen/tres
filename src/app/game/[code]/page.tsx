@@ -25,6 +25,7 @@ export default function GamePage() {
     const [error, setError] = useState('');
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+    const [playingCardIds, setPlayingCardIds] = useState<string[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
     const timeoutTriggeredRef = useRef<number | null>(null);
 
@@ -136,6 +137,7 @@ export default function GamePage() {
         if (!playerId) return;
 
         try {
+            setPlayingCardIds(cardIds);
             const response = await fetch(`/api/game/${code}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -150,12 +152,16 @@ export default function GamePage() {
             const data = await response.json();
 
             if (!response.ok) {
+                setPlayingCardIds([]);
                 showActionMessage(data.error || 'Cannot play these cards');
                 return;
             }
 
             setGame(data.game);
             setSelectedCardIds([]);
+
+            // Clear playing cards after animation duration
+            setTimeout(() => setPlayingCardIds([]), 400);
         } catch (err) {
             showActionMessage('Failed to play cards');
         }
@@ -413,6 +419,7 @@ export default function GamePage() {
                         onDrawAction={game.currentDrawStack > 0 ? handleDrawCard : handleDrawThreeSkip}
                         selectedCardIds={selectedCardIds}
                         currentDrawStack={game.currentDrawStack}
+                        playingCardIds={playingCardIds}
                     />
                 </div>
             </main>

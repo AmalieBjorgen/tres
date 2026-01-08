@@ -11,6 +11,8 @@ interface CardProps {
     playable?: boolean;
     disabled?: boolean;
     selected?: boolean;
+    drawing?: boolean;
+    playing?: boolean;
     onClick?: () => void;
     className?: string;
 }
@@ -22,6 +24,8 @@ export function Card({
     playable = false,
     disabled = false,
     selected = false,
+    drawing = false,
+    playing = false,
     onClick,
     className = '',
 }: CardProps) {
@@ -54,6 +58,8 @@ export function Card({
         ${playable ? styles.cardPlayable : ''}
         ${disabled ? styles.cardDisabled : ''}
         ${selected ? styles.cardSelected : ''}
+        ${drawing ? styles.cardDrawing : ''}
+        ${playing ? styles.cardPlaying : ''}
         ${className}
       `}
             onClick={disabled ? undefined : onClick}

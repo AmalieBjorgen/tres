@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { Card as CardType, CardColor } from '@/lib/types';
 import { canPlayCard } from '@/lib/cards';
 import { Card } from './Card';
@@ -15,6 +16,7 @@ interface HandProps {
     onDrawAction: () => void;
     selectedCardIds?: string[];
     currentDrawStack?: number;
+    playingCardIds?: string[];
 }
 
 const PlayIcon = () => (
@@ -40,18 +42,80 @@ export function Hand({
     onDrawAction,
     selectedCardIds = [],
     currentDrawStack = 0,
+    playingCardIds = [],
 }: HandProps) {
-    if (cards.length === 0) {
+    const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
+    const [ghostCards, setGhostCards] = useState<CardType[]>([]);
+    const [displayCards, setDisplayCards] = useState<CardType[]>(cards);
+    const prevCardIdsRef = useRef<Set<string>>(new Set());
+
+    // Handle incoming (drawn) cards
+    useEffect(() => {
+        const currentCardIds = new Set(cards.map(c => c.id));
+        const addedCardIds = new Set([...currentCardIds].filter(id => !prevCardIdsRef.current.has(id)));
+
+        if (addedCardIds.size > 0) {
+            setNewCardIds(addedCardIds);
+            const timer = setTimeout(() => setNewCardIds(new Set()), 600);
+            return () => clearTimeout(timer);
+        }
+
+        prevCardIdsRef.current = currentCardIds;
+    }, [cards]);
+
+    // Handle outgoing (played) cards with ghosting
+    useEffect(() => {
+        // If cards were in our display list but are now gone and are in playingCardIds, keep them as ghosts
+        const removedButPlaying = displayCards.filter(c =>
+            !cards.find(nc => nc.id === c.id) &&
+            playingCardIds.includes(c.id) &&
+            !ghostCards.find(gc => gc.id === c.id)
+        );
+
+        if (removedButPlaying.length > 0) {
+            const nextGhosts = [...ghostCards, ...removedButPlaying];
+            setGhostCards(nextGhosts);
+            setDisplayCards([...cards, ...nextGhosts]);
+
+            const timer = setTimeout(() => {
+                setGhostCards([]);
+                setDisplayCards(cards);
+            }, 400);
+            return () => clearTimeout(timer);
+        } else {
+            // Sync displayCards with cards if no new ghosts
+            if (ghostCards.length === 0) {
+                setDisplayCards(cards);
+            }
+        }
+    }, [cards, playingCardIds]);
+
+    if (displayCards.length === 0) {
         return (
-            <div className={styles.hand}>
-                <div className={styles.handEmpty}>No cards in hand</div>
+            <div className={styles.handContainer}>
+                {isMyTurn && (
+                    <button
+                        className={`${styles.actionButton} ${styles.drawButton}`}
+                        onClick={onDrawAction}
+                        title={currentDrawStack > 0 ? `Draw ${currentDrawStack} penalty` : "Draw 3 & Skip"}
+                    >
+                        <DrawIcon />
+                        <span className={styles.buttonLabel}>
+                            {currentDrawStack > 0 ? `+${currentDrawStack}` : 'Skip'}
+                        </span>
+                    </button>
+                )}
+                <div className={styles.hand}>
+                    <div className={styles.handEmpty}>No cards in hand</div>
+                </div>
             </div>
         );
     }
 
-    const handClass = cards.length > 10
+    const finalCards = displayCards;
+    const handClass = finalCards.length > 10
         ? styles.handManyCards
-        : cards.length > 7
+        : finalCards.length > 7
             ? styles.handFanned
             : '';
 
@@ -72,28 +136,23 @@ export function Hand({
 
             <div className={styles.hand}>
                 <div className={`${styles.handCards} ${handClass}`}>
-                    {cards.map((card) => {
+                    {finalCards.map((card) => {
                         const isSelected = selectedCardIds.includes(card.id);
+                        const isNew = newCardIds.has(card.id);
+                        const isPlaying = playingCardIds.includes(card.id) || ghostCards.some(gc => gc.id === card.id);
                         let isPlayable = isMyTurn && canPlayCard(card, topCard, currentColor);
 
-                        // Broaden playability for multi-selection:
-                        // If we already have cards selected, allow selecting other cards with the same number
                         if (isMyTurn && selectedCardIds.length > 0) {
                             const firstSelectedId = selectedCardIds[0];
                             const firstSelectedCard = cards.find(c => c.id === firstSelectedId);
-
                             if (firstSelectedCard?.type === 'number' && card.type === 'number' && firstSelectedCard.value === card.value) {
                                 isPlayable = true;
                             }
                         }
 
-                        // If stacking, refine playable status
                         if (isMyTurn && currentDrawStack > 0) {
-                            if (topCard.type === 'draw_two') {
-                                isPlayable = card.type === 'draw_two';
-                            } else if (topCard.type === 'wild_draw_four') {
-                                isPlayable = card.type === 'wild_draw_four';
-                            }
+                            if (topCard.type === 'draw_two') isPlayable = card.type === 'draw_two';
+                            else if (topCard.type === 'wild_draw_four') isPlayable = card.type === 'wild_draw_four';
                         }
 
                         return (
@@ -103,6 +162,8 @@ export function Hand({
                                     playable={isPlayable}
                                     disabled={!isPlayable && isMyTurn}
                                     selected={isSelected}
+                                    drawing={isNew}
+                                    playing={isPlaying}
                                     onClick={() => onToggleCard(card.id)}
                                 />
                             </div>
