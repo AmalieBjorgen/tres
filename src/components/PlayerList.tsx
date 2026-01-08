@@ -66,6 +66,20 @@ export function PlayerList({
                                     </button>
                                 )}
                             </div>
+                            <div className={styles.playerStatus}>
+                                {isActive && !player.rank && (
+                                    <span className={styles.thinking}>Thinking...</span>
+                                )}
+                                {player.rank && (
+                                    <span className={styles.spectating}>Spectating</span>
+                                )}
+                                {!isActive && !player.rank && !isMe && (
+                                    <span className={styles.waiting}>Waiting</span>
+                                )}
+                                {isMe && !isActive && !player.rank && (
+                                    <span className={styles.waiting}>Your turn soon</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );

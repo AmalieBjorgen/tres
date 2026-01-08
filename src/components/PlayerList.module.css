@@ -142,6 +142,47 @@
     transform: scale(1.05);
 }
 
+.playerStatus {
+    margin-top: 4px;
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.thinking {
+    font-size: 0.65rem;
+    color: var(--color-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: thinkingFade 1.5s ease-in-out infinite;
+}
+
+@keyframes thinkingFade {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.spectating {
+    font-size: 0.65rem;
+    color: var(--card-green);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.waiting {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .player {
