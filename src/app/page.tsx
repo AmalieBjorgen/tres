@@ -108,48 +108,53 @@ export default function Home() {
       </div>
 
       <div className={styles.actions}>
-        <div className={styles.actionCard}>
+        {/* Step 1: Identity */}
+        <div className={`${styles.actionCard} ${styles.profileCard}`}>
           <h2 className={styles.actionTitle}>
-            <span className={styles.actionIcon}>🎮</span>
-            Play Now
+            <span className={styles.actionIcon}>👤</span>
+            Choose Your Name
           </h2>
-          <div className={styles.formGroup}>
-            <input
-              type="text"
-              className="input"
-              placeholder="Enter your name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              maxLength={20}
-            />
+          <input
+            type="text"
+            className="input"
+            placeholder="Enter your name"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            maxLength={20}
+            style={{ fontSize: '1.25rem', textAlign: 'center' }}
+          />
+        </div>
+
+        <div className={styles.actionGrid}>
+          {/* Option A: Host */}
+          <div className={styles.actionCard}>
+            <h2 className={styles.actionTitle}>
+              <span className={styles.actionIcon}>🎮</span>
+              Host a Game
+            </h2>
+            <p className={styles.actionDescription}>Start a new lobby and invite your friends.</p>
             <button
               className="btn btn-primary btn-lg"
               onClick={handleCreateGame}
               disabled={isCreating}
               style={{ width: '100%' }}
             >
-              {isCreating ? 'Creating...' : 'Create Game'}
+              {isCreating ? 'Creating...' : 'Create Lobby'}
             </button>
           </div>
-        </div>
 
-        <div className={styles.divider}>
-          <div className={styles.dividerLine} />
-          <span>or join a game</span>
-          <div className={styles.dividerLine} />
-        </div>
-
-        <div className={styles.actionCard}>
-          <h2 className={styles.actionTitle}>
-            <span className={styles.actionIcon}>🔗</span>
-            Join with Code
-          </h2>
-          <div className={styles.formGroup}>
+          {/* Option B: Join */}
+          <div className={styles.actionCard}>
+            <h2 className={styles.actionTitle}>
+              <span className={styles.actionIcon}>🔗</span>
+              Join a Game
+            </h2>
+            <p className={styles.actionDescription}>Enter a 6-character code to join the fun.</p>
             <div className={styles.inputGroup}>
               <input
                 type="text"
                 className="input"
-                placeholder="Enter lobby code"
+                placeholder="ABCDEF"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 maxLength={6}
