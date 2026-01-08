@@ -11,7 +11,9 @@ interface HandProps {
     currentColor: CardColor;
     isMyTurn: boolean;
     onPlayCard: (cardId: string) => void;
-    selectedCard?: string;
+    selectedCardIds?: string[];
+    onToggleCard?: (cardId: string) => void;
+    currentDrawStack?: number;
 }
 
 export function Hand({
@@ -20,7 +22,9 @@ export function Hand({
     currentColor,
     isMyTurn,
     onPlayCard,
-    selectedCard,
+    selectedCardIds = [],
+    onToggleCard,
+    currentDrawStack = 0,
 }: HandProps) {
     if (cards.length === 0) {
         return (
@@ -40,8 +44,18 @@ export function Hand({
         <div className={styles.hand}>
             <div className={`${styles.handCards} ${handClass}`}>
                 {cards.map((card) => {
-                    const isPlayable = isMyTurn && canPlayCard(card, topCard, currentColor);
-                    const isSelected = selectedCard === card.id;
+                    let isPlayable = isMyTurn && canPlayCard(card, topCard, currentColor);
+
+                    // If stacking, refine playable status
+                    if (isMyTurn && currentDrawStack > 0) {
+                        if (topCard.type === 'draw_two') {
+                            isPlayable = card.type === 'draw_two';
+                        } else if (topCard.type === 'wild_draw_four') {
+                            isPlayable = card.type === 'wild_draw_four';
+                        }
+                    }
+
+                    const isSelected = selectedCardIds.includes(card.id);
 
                     return (
                         <div key={card.id} className={styles.handCard}>
@@ -50,7 +64,7 @@ export function Hand({
                                 playable={isPlayable}
                                 disabled={!isPlayable && isMyTurn}
                                 selected={isSelected}
-                                onClick={() => isPlayable && onPlayCard(card.id)}
+                                onClick={() => onToggleCard ? onToggleCard(card.id) : onPlayCard(card.id)}
                             />
                         </div>
                     );

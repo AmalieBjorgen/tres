@@ -24,7 +24,7 @@ export default function GamePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [showColorPicker, setShowColorPicker] = useState(false);
-    const [pendingCard, setPendingCard] = useState<string | null>(null);
+    const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
     const timeoutTriggeredRef = useRef<number | null>(null);
 
@@ -86,25 +86,53 @@ export default function GamePage() {
         setTimeout(() => setActionMessage(null), 1500);
     };
 
-    const handlePlayCard = async (cardId: string) => {
-        if (!game || !playerId) return;
+    const handleToggleCard = (cardId: string) => {
+        if (!game || !playerId || !game.isMyTurn) return;
 
-        // Find the card
         const card = game.myHand.find((c) => c.id === cardId);
         if (!card) return;
 
+        setSelectedCardIds((prev) => {
+            if (prev.includes(cardId)) {
+                return prev.filter(id => id !== cardId);
+            }
+
+            // Logic for multi-card selection
+            if (prev.length > 0) {
+                const firstId = prev[0];
+                const firstCard = game.myHand.find(c => c.id === firstId);
+
+                // Only numeric cards of the same value can be multi-selected
+                if (firstCard?.type === 'number' && card.type === 'number' && firstCard.value === card.value) {
+                    return [...prev, cardId];
+                }
+
+                // If not same number or not numeric, replace selection
+                return [cardId];
+            }
+
+            return [cardId];
+        });
+    };
+
+    const handlePlaySelected = async () => {
+        if (!game || !playerId || selectedCardIds.length === 0) return;
+
+        const firstId = selectedCardIds[0];
+        const firstCard = game.myHand.find((c) => c.id === firstId);
+        if (!firstCard) return;
+
         // If it's a wild card, show color picker
-        if (isWildCard(card)) {
-            setPendingCard(cardId);
+        if (isWildCard(firstCard)) {
             setShowColorPicker(true);
             return;
         }
 
-        // Play the card
-        await executePlayCard(cardId);
+        // Play the cards
+        await executePlayCards(selectedCardIds);
     };
 
-    const executePlayCard = async (cardId: string, chosenColor?: CardColor) => {
+    const executePlayCards = async (cardIds: string[], chosenColor?: CardColor) => {
         if (!playerId) return;
 
         try {
@@ -114,7 +142,7 @@ export default function GamePage() {
                 body: JSON.stringify({
                     action: 'play_card',
                     playerId,
-                    cardId,
+                    cardIds,
                     chosenColor,
                 }),
             });
@@ -122,21 +150,21 @@ export default function GamePage() {
             const data = await response.json();
 
             if (!response.ok) {
-                showActionMessage(data.error || 'Cannot play this card');
+                showActionMessage(data.error || 'Cannot play these cards');
                 return;
             }
 
             setGame(data.game);
+            setSelectedCardIds([]);
         } catch (err) {
-            showActionMessage('Failed to play card');
+            showActionMessage('Failed to play cards');
         }
     };
 
     const handleColorSelected = (color: CardColor) => {
         setShowColorPicker(false);
-        if (pendingCard) {
-            executePlayCard(pendingCard, color);
-            setPendingCard(null);
+        if (selectedCardIds.length > 0) {
+            executePlayCards(selectedCardIds, color);
         }
     };
 
@@ -161,10 +189,45 @@ export default function GamePage() {
             }
 
             setGame(data.game);
-            const count = data.game.lastAction?.cardCount || 1;
-            showActionMessage(`Drew ${count} card${count !== 1 ? 's' : ''}`);
+            const action = data.game.lastAction;
+            const count = action?.cardCount || 1;
+
+            if (game.currentDrawStack > 0) {
+                showActionMessage(`Ouch! Drew ${count} stacked cards.`);
+            } else {
+                showActionMessage(`Drew ${count} card${count !== 1 ? 's' : ''}`);
+            }
+            setSelectedCardIds([]);
         } catch (err) {
             showActionMessage('Failed to draw card');
+        }
+    };
+
+    const handleDrawThreeSkip = async () => {
+        if (!game || !playerId || !game.isMyTurn) return;
+
+        try {
+            const response = await fetch(`/api/game/${code}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'draw_three_skip',
+                    playerId,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showActionMessage(data.error || 'Cannot draw and skip');
+                return;
+            }
+
+            setGame(data.game);
+            showActionMessage('Drew 3 and skipped turn');
+            setSelectedCardIds([]);
+        } catch (err) {
+            showActionMessage('Failed to draw and skip');
         }
     };
 
@@ -335,6 +398,7 @@ export default function GamePage() {
                         currentPlayerName={currentPlayer.name}
                         isMyTurn={game.isMyTurn}
                         onDrawCard={handleDrawCard}
+                        currentDrawStack={game.currentDrawStack}
                     />
                 </div>
 
@@ -344,8 +408,32 @@ export default function GamePage() {
                         topCard={game.topCard}
                         currentColor={game.currentColor}
                         isMyTurn={game.isMyTurn}
-                        onPlayCard={handlePlayCard}
+                        onPlayCard={handlePlaySelected}
+                        selectedCardIds={selectedCardIds}
+                        onToggleCard={handleToggleCard}
+                        currentDrawStack={game.currentDrawStack}
                     />
+
+                    {game.isMyTurn && (
+                        <div className={styles.turnActions}>
+                            <button
+                                className={`btn btn-primary ${styles.playButton}`}
+                                onClick={handlePlaySelected}
+                                disabled={selectedCardIds.length === 0}
+                            >
+                                Play Card{selectedCardIds.length > 1 ? 's' : ''}
+                            </button>
+
+                            {game.currentDrawStack === 0 && (
+                                <button
+                                    className={`btn btn-secondary ${styles.skipButton}`}
+                                    onClick={handleDrawThreeSkip}
+                                >
+                                    Draw 3 & Skip
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
 
