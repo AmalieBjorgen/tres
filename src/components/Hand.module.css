@@ -2,9 +2,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+    /* Closer on PC */
     width: 100%;
     padding: 0 var(--spacing-md);
+    max-width: 900px;
+    /* Constrain width to keep buttons closer to cards on wide screens */
+    margin: 0 auto;
 }
 
 .hand {
@@ -119,20 +123,24 @@
 
     .handCards {
         justify-content: flex-start;
-        padding: 0 var(--spacing-md);
+        padding: 0 var(--spacing-xl);
+        /* More padding on mobile for first/last card visibility */
         min-width: max-content;
     }
 
     .handCard {
-        margin-left: -45px;
+        margin-left: -35px;
+        /* Less overlap (was -45px) so more of each card is visible */
     }
 
     .handFanned .handCard {
-        margin-left: -55px;
+        margin-left: -40px;
+        /* Was -55px */
     }
 
     .handManyCards .handCard {
-        margin-left: -60px;
+        margin-left: -50px;
+        /* Was -60px */
     }
 
     .actionButton {
