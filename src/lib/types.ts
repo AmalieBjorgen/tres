@@ -23,6 +23,7 @@ export interface Player {
     isHost: boolean;
     isConnected: boolean;
     hasSaidTres: boolean;
+    rank?: number; // 1, 2, 3...
 }
 
 // Game direction
@@ -46,6 +47,7 @@ export interface GameState {
     createdAt: number;
     turnStartedAt: number; // Timestamp when current turn started
     currentDrawStack: number; // Accumulated cards to draw from stacking (+2/+4)
+    podium: string[]; // Ordered list of player IDs who finished
 }
 
 // Lobby (waiting room before game starts)
@@ -153,6 +155,7 @@ export interface ClientGameState {
     turnStartedAt: number; // Timestamp when current turn started
     turnDuration: number; // Turn duration in seconds
     currentDrawStack: number;
+    podium: string[];
 }
 
 export interface ClientPlayer {
@@ -162,4 +165,5 @@ export interface ClientPlayer {
     isHost: boolean;
     isConnected: boolean;
     hasSaidTres: boolean;
+    rank?: number;
 }

@@ -567,6 +567,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         isHost: p.isHost,
         isConnected: p.isConnected,
         hasSaidTres: p.hasSaidTres,
+        rank: p.rank,
     }));
 
     return {
