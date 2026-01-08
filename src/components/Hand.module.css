@@ -59,26 +59,47 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+    .hand {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: var(--spacing-xl);
+        /* Space for scrollbar */
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* Hide scrollbar for Firefox */
+    }
+
+    .hand::-webkit-scrollbar {
+        display: none;
+        /* Hide scrollbar for Chrome/Safari */
+    }
+
+    .handCards {
+        justify-content: flex-start;
+        padding: 0 var(--spacing-xl);
+        min-width: max-content;
+    }
+
     .handCard {
-        margin-left: -20px;
+        margin-left: -35px;
     }
 
     .handFanned .handCard {
-        margin-left: -30px;
+        margin-left: -45px;
     }
 
     .handManyCards .handCard {
-        margin-left: -40px;
+        margin-left: -55px;
     }
 }
 
 @media (max-width: 480px) {
     .handCard {
-        margin-left: -25px;
+        margin-left: -40px;
     }
 
     .handFanned .handCard,
     .handManyCards .handCard {
-        margin-left: -35px;
+        margin-left: -50px;
     }
 }
