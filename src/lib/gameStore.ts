@@ -17,6 +17,10 @@ class GameStore {
             console.log('Using Upstash Redis for state persistence');
         } else {
             console.log('Using in-memory store (state will be lost on serverless restarts)');
+            // Start background cleanup for in-memory store
+            if (typeof window === 'undefined') {
+                setInterval(() => this.cleanup(), 600000); // Clean up every 10 minutes
+            }
         }
     }
 
@@ -35,7 +39,7 @@ class GameStore {
             await this.redis.set(`lobby:${code}`, lobby, { ex: 3600 }); // 1 hour TTL
             return;
         }
-        this.lobbies.set(code, lobby);
+        this.lobbies.set(code, { ...lobby, updatedAt: Date.now() } as any);
     }
 
     async deleteLobby(code: string): Promise<void> {
@@ -61,7 +65,7 @@ class GameStore {
             await this.redis.set(`game:${code}`, game, { ex: 3600 }); // 1 hour TTL
             return;
         }
-        this.games.set(code, game);
+        this.games.set(code, { ...game, updatedAt: Date.now() } as any);
     }
 
     async deleteGame(code: string): Promise<void> {
@@ -77,14 +81,18 @@ class GameStore {
         if (this.redis) return; // Redis handles TTL automatically
 
         const now = Date.now();
+        console.log(`Running GameStore cleanup... (Current size: ${this.lobbies.size} lobbies, ${this.games.size} games)`);
+
         for (const [code, lobby] of this.lobbies.entries()) {
-            if (now - lobby.createdAt > maxAgeMs) {
+            const lastActivity = (lobby as any).updatedAt || lobby.createdAt;
+            if (now - lastActivity > maxAgeMs) {
                 this.lobbies.delete(code);
             }
         }
 
         for (const [code, game] of this.games.entries()) {
-            if (now - game.createdAt > maxAgeMs) {
+            const lastActivity = (game as any).updatedAt || game.createdAt;
+            if (now - lastActivity > maxAgeMs) {
                 this.games.delete(code);
             }
         }

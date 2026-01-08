@@ -504,3 +504,75 @@ export function isTurnTimedOut(game: GameState): boolean {
     const elapsed = (Date.now() - game.turnStartedAt) / 1000;
     return elapsed >= TURN_DURATION_SECONDS;
 }
+
+// Remove player from lobby
+export function leaveLobby(lobby: Lobby, playerId: string): Lobby | null {
+    const updatedPlayers = lobby.players.filter((p) => p.id !== playerId);
+
+    if (updatedPlayers.length === 0) {
+        return null; // Signal to delete lobby
+    }
+
+    // If host left, assign new host
+    let newHostId = lobby.hostId;
+    if (lobby.hostId === playerId) {
+        newHostId = updatedPlayers[0].id;
+        // The player objects in the array are recreated to avoid mutations
+        const playersWithNewHost = updatedPlayers.map(p =>
+            p.id === newHostId ? { ...p, isHost: true } : p
+        );
+        return {
+            ...lobby,
+            players: playersWithNewHost,
+            hostId: newHostId,
+        };
+    }
+
+    return {
+        ...lobby,
+        players: updatedPlayers,
+    };
+}
+
+// Remove player from game
+export function leaveGame(game: GameState, playerId: string): GameState | null {
+    const playerIndex = game.players.findIndex((p) => p.id === playerId);
+    if (playerIndex === -1) return game;
+
+    const updatedPlayers = game.players.filter((p) => p.id !== playerId);
+
+    if (updatedPlayers.length === 0) {
+        return null; // Signal to delete game
+    }
+
+    let newCurrentPlayerIndex = game.currentPlayerIndex;
+    let turnReset = false;
+
+    // If it was the leaving player's turn
+    if (game.currentPlayerIndex === playerIndex) {
+        // Move turn to the player who now occupies this index (or wrap)
+        newCurrentPlayerIndex = game.currentPlayerIndex % updatedPlayers.length;
+        turnReset = true;
+    } else if (game.currentPlayerIndex > playerIndex) {
+        // Shifting index down because a player before the current one was removed
+        newCurrentPlayerIndex = game.currentPlayerIndex - 1;
+    }
+
+    // Ensure there's a host
+    const hasHost = updatedPlayers.some(p => p.isHost);
+    const playersWithHost = hasHost ? updatedPlayers : updatedPlayers.map((p, i) =>
+        i === 0 ? { ...p, isHost: true } : p
+    );
+
+    return {
+        ...game,
+        players: playersWithHost,
+        currentPlayerIndex: newCurrentPlayerIndex,
+        turnStartedAt: turnReset ? Date.now() : game.turnStartedAt,
+        lastAction: {
+            type: 'draw_card', // Using draw_card as a generic type or we could add 'leave'
+            playerId,
+            timestamp: Date.now(),
+        },
+    };
+}

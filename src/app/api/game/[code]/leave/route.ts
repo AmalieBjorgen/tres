@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { gameStore } from '@/lib/gameStore';
+import { leaveGame } from '@/lib/game';
+import { broadcastToGame } from '@/lib/pusher';
+
+// POST /api/game/[code]/leave - Leave a game
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ code: string }> }
+) {
+    try {
+        const { code } = await params;
+        const body = await request.json();
+        const { playerId } = body;
+
+        const game = await gameStore.getGame(code);
+
+        if (!game) {
+            return NextResponse.json(
+                { error: 'Game not found' },
+                { status: 404 }
+            );
+        }
+
+        const updatedGame = leaveGame(game, playerId);
+
+        if (!updatedGame) {
+            await gameStore.deleteGame(code);
+            return NextResponse.json({ success: true, dissolved: true });
+        }
+
+        await gameStore.setGame(updatedGame);
+
+        // Broadcast game update
+        await broadcastToGame(code, 'game-updated', {
+            action: 'leave',
+            playerId,
+            timestamp: Date.now(),
+        });
+
+        return NextResponse.json({
+            success: true,
+            game: updatedGame,
+        });
+    } catch (error) {
+        console.error('Error leaving game:', error);
+        return NextResponse.json(
+            { error: 'Failed to leave game' },
+            { status: 500 }
+        );
+    }
+}

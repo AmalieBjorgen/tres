@@ -223,6 +223,21 @@ export default function GamePage() {
         }
     };
 
+    const handleLeaveGame = async () => {
+        if (!playerId) return;
+
+        try {
+            await fetch(`/api/game/${code}/leave`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerId }),
+            });
+            router.push('/');
+        } catch (err) {
+            router.push('/');
+        }
+    };
+
     const handleTimeout = useCallback(() => {
         // Prevent triggering multiple times for the same turn
         if (!game || !playerId) return;
@@ -283,14 +298,22 @@ export default function GamePage() {
     return (
         <div className={styles.game}>
             <header className={styles.gameHeader}>
-                <span className={styles.gameLogo}>TRES</span>
+                <div className={styles.headerLeft}>
+                    <span className={styles.gameLogo}>TRES</span>
+                    <span className={styles.gameCode}>Code: {code}</span>
+                </div>
                 <TurnTimer
                     turnStartedAt={game.turnStartedAt}
                     turnDuration={game.turnDuration}
                     isMyTurn={game.isMyTurn}
                     onTimeout={handleTimeout}
                 />
-                <span className={styles.gameCode}>Code: {code}</span>
+                <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleLeaveGame}
+                >
+                    Leave Game
+                </button>
             </header>
 
             <main className={styles.gameMain}>

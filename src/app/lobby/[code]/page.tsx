@@ -72,7 +72,7 @@ export default function LobbyPage() {
 
         // Subscribe to lobby updates
         const unsubscribe = subscribeToLobby(code, (event, data) => {
-            if (event === 'player-joined') {
+            if (event === 'player-joined' || event === 'player-left') {
                 const eventData = data as { lobby: Lobby };
                 setLobby(eventData.lobby);
             } else if (event === 'game-started') {
@@ -104,6 +104,21 @@ export default function LobbyPage() {
             document.body.removeChild(textArea);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const handleLeaveLobby = async () => {
+        if (!playerId) return;
+
+        try {
+            await fetch(`/api/lobby/${code}/leave`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerId }),
+            });
+            router.push('/');
+        } catch (err) {
+            router.push('/');
         }
     };
 
@@ -241,6 +256,12 @@ export default function LobbyPage() {
                         Waiting for the host to start the game...
                     </p>
                 )}
+                <button
+                    className="btn btn-secondary"
+                    onClick={handleLeaveLobby}
+                >
+                    Leave Lobby
+                </button>
                 {error && <p className={styles.error}>{error}</p>}
             </div>
         </main>
