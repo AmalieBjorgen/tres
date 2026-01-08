@@ -23,8 +23,6 @@ export function GameBoard({
     isMyTurn,
     onDrawCard,
 }: GameBoardProps) {
-    const colorDotClass = styles[`colorDot${currentColor.charAt(0).toUpperCase()}${currentColor.slice(1)}`];
-
     return (
         <div className={styles.gameBoard}>
             <div className={`${styles.turnIndicator} ${isMyTurn ? styles.turnIndicatorActive : ''}`}>
@@ -39,12 +37,7 @@ export function GameBoard({
 
                 {/* Discard pile */}
                 <div className={styles.discardPile}>
-                    <span className={styles.discardLabel}>Discard</span>
                     <Card card={topCard} />
-                    <div className={styles.currentColorIndicator}>
-                        <span className={`${styles.colorDot} ${colorDotClass}`} />
-                        <span>{currentColor}</span>
-                    </div>
                 </div>
 
                 {/* Draw pile */}

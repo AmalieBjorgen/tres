@@ -77,6 +77,7 @@ export interface GameAction {
     playerId: string;
     cardId?: string;
     chosenColor?: CardColor;
+    cardCount?: number;
     timestamp: number;
 }
 

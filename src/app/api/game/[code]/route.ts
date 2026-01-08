@@ -100,7 +100,7 @@ export async function POST(
             }
         }
 
-        let result: { success: boolean; game: typeof currentGame; error?: string; drawnCard?: unknown };
+        let result: { success: boolean; game: typeof currentGame; error?: string; drawnCards?: unknown };
 
         switch (action) {
             case 'play_card':

@@ -304,43 +304,61 @@ export function playCard(
     return { success: true, game: newGame };
 }
 
-// Draw a card (when player can't play)
+// Draw cards (when player can't play)
 export function drawCardAction(
     game: GameState,
     playerId: string
-): { success: boolean; game: GameState; drawnCard?: Card; error?: string } {
+): { success: boolean; game: GameState; drawnCards?: Card[]; error?: string } {
     const currentPlayer = getCurrentPlayer(game);
     if (currentPlayer.id !== playerId) {
         return { success: false, game, error: 'Not your turn' };
     }
 
-    const { cards: drawnCards, game: afterDraw } = drawCards(game, 1);
+    const topCard = getTopCard(game);
+    const { currentColor } = game;
 
-    if (drawnCards.length === 0) {
+    let currentGameState = game;
+    const accumulatedDrawnCards: Card[] = [];
+
+    // Draw up to 3 cards or until a playable one is found
+    for (let i = 0; i < 3; i++) {
+        const { cards, game: stateAfterDraw } = drawCards(currentGameState, 1);
+        if (cards.length === 0) break;
+
+        const drawnCard = cards[0];
+        accumulatedDrawnCards.push(drawnCard);
+        currentGameState = stateAfterDraw;
+
+        // If the card is playable, we stop drawing
+        if (canPlayCard(drawnCard, topCard, currentColor)) {
+            break;
+        }
+    }
+
+    if (accumulatedDrawnCards.length === 0) {
         return { success: false, game, error: 'No cards to draw' };
     }
 
-    const drawnCard = drawnCards[0];
-
-    // Add card to player's hand
-    const updatedPlayers = afterDraw.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, drawnCard], hasSaidTres: false } : p
+    // Add cards to player's hand
+    const updatedPlayers = currentGameState.players.map((p) =>
+        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
     );
 
     // Move to next player and reset turn timer
     const newGame: GameState = {
-        ...afterDraw,
+        ...currentGameState,
         players: updatedPlayers,
-        currentPlayerIndex: getNextPlayerIndex(afterDraw),
+        currentPlayerIndex: getNextPlayerIndex(currentGameState),
         turnStartedAt: Date.now(),
         lastAction: {
             type: 'draw_card',
             playerId,
+            cardCount: accumulatedDrawnCards.length,
             timestamp: Date.now(),
         },
     };
 
-    return { success: true, game: newGame, drawnCard };
+    return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
 }
 
 // Say "TRES!" when down to one card
@@ -472,6 +490,7 @@ export function handleTurnTimeout(
         lastAction: {
             type: 'draw_card',
             playerId: currentPlayer.id,
+            cardCount: 5,
             timestamp: Date.now(),
         },
     };

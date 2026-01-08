@@ -161,7 +161,8 @@ export default function GamePage() {
             }
 
             setGame(data.game);
-            showActionMessage('Drew a card');
+            const count = data.game.lastAction?.cardCount || 1;
+            showActionMessage(`Drew ${count} card${count !== 1 ? 's' : ''}`);
         } catch (err) {
             showActionMessage('Failed to draw card');
         }

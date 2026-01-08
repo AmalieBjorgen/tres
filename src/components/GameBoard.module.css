@@ -12,9 +12,6 @@
     justify-content: center;
     gap: var(--spacing-xl);
     padding: var(--spacing-xl);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-2xl);
-    border: 1px solid var(--border-color);
     position: relative;
 }
 
@@ -24,6 +21,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--border-color);
+    padding: 3rem;
 }
 
 .discardLabel {
