@@ -15,13 +15,15 @@
     align-items: center;
     min-height: 140px;
     position: relative;
-    overflow: hidden;
+    /* Removed overflow: hidden to prevent card clipping when selected */
 }
 
 .handCards {
     display: flex;
     justify-content: center;
     position: relative;
+    padding-top: 20px;
+    /* Allow space for selected cards (which use translateY(-16px)) */
     padding-bottom: var(--spacing-sm);
 }
 
@@ -102,7 +104,10 @@
 
     .hand {
         overflow-x: auto;
+        overflow-y: visible;
+        /* Allow selected cards to pop up */
         justify-content: flex-start;
+        padding-top: 20px;
         padding-bottom: var(--spacing-md);
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
