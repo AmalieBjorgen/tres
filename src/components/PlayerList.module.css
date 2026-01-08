@@ -1,0 +1,143 @@
+.playerList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.player {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    min-width: 140px;
+}
+
+.playerActive {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.playerDisconnected {
+    opacity: 0.5;
+}
+
+.playerAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.playerActiveAvatar {
+    background: var(--color-primary);
+    color: white;
+}
+
+.playerInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.playerName {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.playerHost {
+    font-size: 0.625rem;
+    padding: 1px 4px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+}
+
+.playerCardCount {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.playerCardIcon {
+    font-size: 0.75rem;
+}
+
+/* TRES indicator */
+.tresBadge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    background: var(--card-yellow);
+    color: #000;
+    font-size: 0.625rem;
+    font-weight: 800;
+    border-radius: var(--radius-sm);
+    animation: tresPulse 1s infinite;
+}
+
+@keyframes tresPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Challenge button */
+.challengeButton {
+    padding: 2px 6px;
+    background: var(--card-red);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.challengeButton:hover {
+    background: var(--card-red-dark);
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .player {
+        min-width: 120px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .playerAvatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+}

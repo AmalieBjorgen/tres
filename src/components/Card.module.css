@@ -1,0 +1,203 @@
+.card {
+    position: relative;
+    width: var(--card-width);
+    height: var(--card-height);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    transform-style: preserve-3d;
+    user-select: none;
+}
+
+.cardSmall {
+    width: var(--card-width-sm);
+    height: var(--card-height-sm);
+}
+
+.cardInner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+/* Card Colors */
+.cardRed .cardInner {
+    background: linear-gradient(145deg, var(--card-red) 0%, var(--card-red-dark) 100%);
+}
+
+.cardBlue .cardInner {
+    background: linear-gradient(145deg, var(--card-blue) 0%, var(--card-blue-dark) 100%);
+}
+
+.cardGreen .cardInner {
+    background: linear-gradient(145deg, var(--card-green) 0%, var(--card-green-dark) 100%);
+}
+
+.cardYellow .cardInner {
+    background: linear-gradient(145deg, var(--card-yellow) 0%, var(--card-yellow-dark) 100%);
+}
+
+.cardWild .cardInner {
+    background: var(--card-wild);
+    background-size: 400% 400%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Card Back */
+.cardBack .cardInner {
+    background: linear-gradient(145deg, #4f46e5 0%, #3730a3 100%);
+}
+
+.cardBackPattern {
+    position: absolute;
+    inset: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cardBackLogo {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
+}
+
+/* Card Value */
+.cardValue {
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+    text-shadow:
+        2px 2px 0 rgba(0, 0, 0, 0.3),
+        -1px -1px 0 rgba(255, 255, 255, 0.2);
+    z-index: 1;
+}
+
+.cardSmall .cardValue {
+    font-size: 1.5rem;
+}
+
+.cardCorner {
+    position: absolute;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.cardCornerTop {
+    top: 4px;
+    left: 6px;
+}
+
+.cardCornerBottom {
+    bottom: 4px;
+    right: 6px;
+    transform: rotate(180deg);
+}
+
+/* Card Oval (like Uno cards have) */
+.cardOval {
+    position: absolute;
+    width: 70%;
+    height: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+}
+
+/* Hover and interaction states */
+.card:hover:not(.cardDisabled) {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: var(--shadow-xl);
+}
+
+.cardPlayable {
+    animation: cardGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes cardGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+    }
+}
+
+.cardDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Card play animation */
+.cardPlaying {
+    animation: playCard 0.4s ease-out forwards;
+}
+
+@keyframes playCard {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Card draw animation */
+.cardDrawing {
+    animation: drawCard 0.3s ease-out;
+}
+
+@keyframes drawCard {
+    from {
+        transform: translateX(-100px) rotate(-20deg);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0) rotate(0);
+        opacity: 1;
+    }
+}
+
+/* Selected card */
+.cardSelected {
+    transform: translateY(-16px);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+}

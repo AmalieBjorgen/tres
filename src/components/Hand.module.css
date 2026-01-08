@@ -1,0 +1,84 @@
+.hand {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: var(--spacing-md);
+    min-height: 150px;
+    position: relative;
+}
+
+.handCards {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.handCard {
+    transition: all var(--transition-fast);
+    margin-left: -25px;
+}
+
+.handCard:first-child {
+    margin-left: 0;
+}
+
+.handCard:hover {
+    z-index: 10;
+}
+
+/* Fan layout for many cards */
+.handFanned .handCard {
+    margin-left: -35px;
+}
+
+.handManyCards .handCard {
+    margin-left: -45px;
+}
+
+/* Empty hand message */
+.handEmpty {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: var(--spacing-lg);
+}
+
+/* Hand label */
+.handLabel {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .handCard {
+        margin-left: -20px;
+    }
+
+    .handFanned .handCard {
+        margin-left: -30px;
+    }
+
+    .handManyCards .handCard {
+        margin-left: -40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .handCard {
+        margin-left: -25px;
+    }
+
+    .handFanned .handCard,
+    .handManyCards .handCard {
+        margin-left: -35px;
+    }
+}

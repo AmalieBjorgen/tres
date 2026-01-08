@@ -1,0 +1,194 @@
+.home {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    background:
+        radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(234, 179, 8, 0.1) 0%, transparent 50%),
+        var(--bg-primary);
+}
+
+.hero {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+    animation: slideUp 0.6s ease;
+}
+
+.logo {
+    font-size: 5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--card-red), var(--card-yellow), var(--card-green), var(--card-blue));
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+    margin-bottom: var(--spacing-sm);
+    letter-spacing: -2px;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.tagline {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.featureCards {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.featureCard {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.featureIcon {
+    font-size: 1rem;
+}
+
+/* Action area */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+    width: 100%;
+    max-width: 400px;
+    animation: slideUp 0.6s ease 0.1s backwards;
+}
+
+.actionCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+}
+
+.actionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.actionIcon {
+    font-size: 1.25rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.inputGroup {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.inputGroup .input {
+    flex: 1;
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.dividerLine {
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+/* Rules section */
+.rules {
+    margin-top: var(--spacing-2xl);
+    max-width: 600px;
+    text-align: center;
+    animation: slideUp 0.6s ease 0.2s backwards;
+}
+
+.rulesTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+}
+
+.rulesList {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--spacing-sm);
+    text-align: left;
+}
+
+.ruleItem {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.ruleIcon {
+    flex-shrink: 0;
+}
+
+/* Error message */
+.error {
+    color: var(--card-red);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-sm);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .logo {
+        font-size: 3.5rem;
+    }
+
+    .tagline {
+        font-size: 1rem;
+    }
+
+    .actions {
+        max-width: 100%;
+    }
+}

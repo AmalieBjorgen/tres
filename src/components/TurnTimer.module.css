@@ -1,0 +1,96 @@
+.timerContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    font-weight: 700;
+    position: relative;
+    background: var(--bg-secondary);
+    border: 3px solid var(--border-color);
+}
+
+.timerRing {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--color-primary);
+    animation: timerRotate 1s linear infinite;
+}
+
+@keyframes timerRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.timerNormal {
+    color: var(--text-primary);
+    border-color: var(--color-primary);
+}
+
+.timerWarning {
+    color: var(--card-yellow);
+    border-color: var(--card-yellow);
+    animation: timerPulse 0.5s ease-in-out infinite;
+}
+
+.timerCritical {
+    color: var(--card-red);
+    border-color: var(--card-red);
+    animation: timerPulse 0.3s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.timerLabel {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.timerMyTurn {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+}
+
+.timerMyTurn.timerWarning {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+}
+
+.timerMyTurn.timerCritical {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .timer {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+}
