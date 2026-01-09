@@ -10,7 +10,8 @@ import {
     LobbyPlayer,
     ClientGameState,
     ClientPlayer,
-    TURN_DURATION_SECONDS
+    TURN_DURATION_SECONDS,
+    TRES_GRACE_PERIOD_MS
 } from './types';
 import { createDeck, shuffleDeck, canPlayCard, isWildCard } from './cards';
 
@@ -280,10 +281,19 @@ export function playCards(
         return { success: false, game, error: 'Must choose a color for wild card' };
     }
 
-    // Remove cards from player's hand
-    const updatedPlayers = game.players.map((p) =>
-        p.id === playerId ? { ...p, hand: cardPool, hasSaidTres: false } : p
-    );
+    // Remove cards from player's hand and handle Tres grace period
+    const updatedPlayers = game.players.map((p) => {
+        if (p.id === playerId) {
+            const hasOneCard = cardPool.length === 1;
+            return {
+                ...p,
+                hand: cardPool,
+                hasSaidTres: false,
+                tresGraceExpiresAt: hasOneCard ? Date.now() + TRES_GRACE_PERIOD_MS : null
+            };
+        }
+        return p;
+    });
 
     // Add cards to discard pile (in order played)
     const newDiscardPile = [...game.discardPile, ...cardsToPlay];
@@ -318,7 +328,6 @@ export function playCards(
 
     newGame = recordAction(newGame, action);
 
-    // Check for win
     // Check for win/finish
     if (cardPool.length === 0) {
         if (!newGame.podium.includes(playerId)) {
@@ -347,7 +356,6 @@ export function playCards(
     }
 
     // Handle special card effects (only of the LAST card played if multiple)
-    // However, for multi-play only numbers are allowed, so this applies primarily to single plays
     switch (lastCard.type) {
         case 'skip':
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
@@ -364,7 +372,6 @@ export function playCards(
 
         case 'draw_two':
         case 'wild_draw_four':
-            // Stacking is handled above. Move turn to next player who must stack or draw.
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
             break;
 
@@ -406,7 +413,7 @@ export function drawCardAction(
         currentGameState = stateAfterDraw;
 
         const updatedPlayers = currentGameState.players.map((p) =>
-            p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
+            p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
         );
 
         const newGame: GameState = {
@@ -449,7 +456,7 @@ export function drawCardAction(
     }
 
     const updatedPlayers = currentGameState.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
+        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
     );
 
     const newGame: GameState = {
@@ -467,8 +474,6 @@ export function drawCardAction(
     };
 
     return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
-
-    return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
 }
 
 // Special action: Draw 3 and skip turn
@@ -489,7 +494,7 @@ export function drawThreeSkipAction(
     const { cards: accumulatedDrawnCards, game: currentGameState } = drawCards(game, 3);
 
     const updatedPlayers = currentGameState.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false } : p
+        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
     );
 
     const newGame: GameState = {
@@ -507,8 +512,6 @@ export function drawThreeSkipAction(
     };
 
     return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
-
-    return { success: true, game: newGame, drawnCards: accumulatedDrawnCards };
 }
 
 // Say "TRES!" when down to one card
@@ -526,7 +529,7 @@ export function sayTres(
     }
 
     const updatedPlayers = game.players.map((p) =>
-        p.id === playerId ? { ...p, hasSaidTres: true } : p
+        p.id === playerId ? { ...p, hasSaidTres: true, tresGraceExpiresAt: null } : p
     );
 
     const action: GameAction = {
@@ -552,15 +555,18 @@ export function challengeTres(
         return { success: false, game, error: 'Target player not found' };
     }
 
-    if (target.hand.length !== 1 || target.hasSaidTres) {
-        return { success: false, game, error: 'Invalid challenge' };
+    const now = Date.now();
+    const isGraceActive = target.tresGraceExpiresAt && now < target.tresGraceExpiresAt;
+
+    if (target.hand.length !== 1 || target.hasSaidTres || isGraceActive) {
+        return { success: false, game, error: isGraceActive ? 'Grace period active' : 'Invalid challenge' };
     }
 
     // Target draws 2 cards as penalty
     const { cards: drawnCards, game: afterDraw } = drawCards(game, 2);
 
     const updatedPlayers = afterDraw.players.map((p) =>
-        p.id === targetId ? { ...p, hand: [...p.hand, ...drawnCards] } : p
+        p.id === targetId ? { ...p, hand: [...p.hand, ...drawnCards], tresGraceExpiresAt: null } : p
     );
 
     const action: GameAction = {
@@ -587,6 +593,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         isHost: p.isHost,
         isConnected: p.isConnected,
         hasSaidTres: p.hasSaidTres,
+        tresGraceExpiresAt: p.tresGraceExpiresAt,
         rank: p.rank,
     }));
 
@@ -627,7 +634,7 @@ export function handleTurnTimeout(
     // Add cards to current player's hand
     const updatedPlayers = afterDraw.players.map((p) =>
         p.id === currentPlayer.id
-            ? { ...p, hand: [...p.hand, ...drawnCards], hasSaidTres: false }
+            ? { ...p, hand: [...p.hand, ...drawnCards], hasSaidTres: false, tresGraceExpiresAt: null }
             : p
     );
 
@@ -669,7 +676,6 @@ export function leaveLobby(lobby: Lobby, playerId: string): Lobby | null {
     let newHostId = lobby.hostId;
     if (lobby.hostId === playerId) {
         newHostId = updatedPlayers[0].id;
-        // The player objects in the array are recreated to avoid mutations
         const playersWithNewHost = updatedPlayers.map(p =>
             p.id === newHostId ? { ...p, isHost: true } : p
         );
@@ -702,11 +708,9 @@ export function leaveGame(game: GameState, playerId: string): GameState | null {
 
     // If it was the leaving player's turn
     if (game.currentPlayerIndex === playerIndex) {
-        // Move turn to the player who now occupies this index (or wrap)
         newCurrentPlayerIndex = game.currentPlayerIndex % updatedPlayers.length;
         turnReset = true;
     } else if (game.currentPlayerIndex > playerIndex) {
-        // Shifting index down because a player before the current one was removed
         newCurrentPlayerIndex = game.currentPlayerIndex - 1;
     }
 
@@ -722,7 +726,7 @@ export function leaveGame(game: GameState, playerId: string): GameState | null {
         currentPlayerIndex: newCurrentPlayerIndex,
         turnStartedAt: turnReset ? Date.now() : game.turnStartedAt,
         lastAction: {
-            type: 'draw_card', // Using draw_card as a generic type or we could add 'leave'
+            type: 'draw_card',
             playerId,
             timestamp: Date.now(),
         },

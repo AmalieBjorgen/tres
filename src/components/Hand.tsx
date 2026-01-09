@@ -44,10 +44,33 @@ export function Hand({
     currentDrawStack = 0,
     playingCardIds = [],
 }: HandProps) {
+    const [sortMode, setSortMode] = useState<'color' | 'value'>('color');
     const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
     const [ghostCards, setGhostCards] = useState<CardType[]>([]);
     const [displayCards, setDisplayCards] = useState<CardType[]>(cards);
     const prevCardIdsRef = useRef<Set<string>>(new Set());
+
+    // Sorting logic
+    const colorOrder: Record<string, number> = { red: 0, blue: 1, green: 2, yellow: 3, null: 4 };
+    const typeOrder: Record<string, number> = { number: 0, skip: 1, reverse: 2, draw_two: 3, wild: 4, wild_draw_four: 5 };
+
+    const sortCards = (cardsToSort: CardType[]) => {
+        return [...cardsToSort].sort((a, b) => {
+            if (sortMode === 'color') {
+                const colorA = a.color || 'null';
+                const colorB = b.color || 'null';
+                if (colorOrder[colorA] !== colorOrder[colorB]) return colorOrder[colorA] - colorOrder[colorB];
+                if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
+                return (a.value || 0) - (b.value || 0);
+            } else {
+                if (a.type !== b.type) return typeOrder[a.type] - typeOrder[b.type];
+                if (a.value !== b.value) return (a.value || 0) - (b.value || 0);
+                const colorA = a.color || 'null';
+                const colorB = b.color || 'null';
+                return colorOrder[colorA] - colorOrder[colorB];
+            }
+        });
+    };
 
     // Handle incoming (drawn) cards
     useEffect(() => {
@@ -66,6 +89,8 @@ export function Hand({
 
     // Handle outgoing (played) cards with ghosting
     useEffect(() => {
+        const sortedHand = sortCards(cards);
+
         // If cards were in our display list but are now gone and are in playingCardIds, keep them as ghosts
         const removedButPlaying = displayCards.filter(c =>
             !cards.find(nc => nc.id === c.id) &&
@@ -76,20 +101,20 @@ export function Hand({
         if (removedButPlaying.length > 0) {
             const nextGhosts = [...ghostCards, ...removedButPlaying];
             setGhostCards(nextGhosts);
-            setDisplayCards([...cards, ...nextGhosts]);
+            setDisplayCards([...sortedHand, ...nextGhosts]);
 
             const timer = setTimeout(() => {
                 setGhostCards([]);
-                setDisplayCards(cards);
+                setDisplayCards(sortedHand);
             }, 400);
             return () => clearTimeout(timer);
         } else {
-            // Sync displayCards with cards if no new ghosts
+            // Sync displayCards with sorted cards if no new ghosts
             if (ghostCards.length === 0) {
-                setDisplayCards(cards);
+                setDisplayCards(sortedHand);
             }
         }
-    }, [cards, playingCardIds]);
+    }, [cards, playingCardIds, sortMode]);
 
     if (displayCards.length === 0) {
         return (
@@ -174,15 +199,24 @@ export function Hand({
             </div>
 
             {isMyTurn && (
-                <button
-                    className={`${styles.actionButton} ${styles.playButton}`}
-                    onClick={onPlayAction}
-                    disabled={selectedCardIds.length === 0}
-                    title="Play Selected"
-                >
-                    <PlayIcon />
-                    <span className={styles.buttonLabel}>Play</span>
-                </button>
+                <div className={styles.handActions}>
+                    <button
+                        className={styles.sortButton}
+                        onClick={() => setSortMode(sortMode === 'color' ? 'value' : 'color')}
+                        title={`Currently sorted by ${sortMode}. Click to sort by ${sortMode === 'color' ? 'value' : 'color'}.`}
+                    >
+                        {sortMode === 'color' ? '🎨' : '🔢'}
+                    </button>
+                    <button
+                        className={`${styles.actionButton} ${styles.playButton}`}
+                        onClick={onPlayAction}
+                        disabled={selectedCardIds.length === 0}
+                        title="Play Selected"
+                    >
+                        <PlayIcon />
+                        <span className={styles.buttonLabel}>Play</span>
+                    </button>
+                </div>
             )}
         </div>
     );

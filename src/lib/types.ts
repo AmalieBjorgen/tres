@@ -1,5 +1,6 @@
 // Turn timer duration in seconds
 export const TURN_DURATION_SECONDS = 30;
+export const TRES_GRACE_PERIOD_MS = 5000;
 
 // Card colors
 export type CardColor = 'red' | 'blue' | 'green' | 'yellow';
@@ -23,6 +24,7 @@ export interface Player {
     isHost: boolean;
     isConnected: boolean;
     hasSaidTres: boolean;
+    tresGraceExpiresAt?: number | null;
     rank?: number; // 1, 2, 3...
 }
 
@@ -167,5 +169,6 @@ export interface ClientPlayer {
     isHost: boolean;
     isConnected: boolean;
     hasSaidTres: boolean;
+    tresGraceExpiresAt?: number | null;
     rank?: number;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { ClientPlayer } from '@/lib/types';
 import styles from './PlayerList.module.css';
 
@@ -16,15 +17,26 @@ export function PlayerList({
     myId,
     onChallenge,
 }: PlayerListProps) {
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     return (
         <div className={styles.playerList}>
             {players.map((player, index) => {
                 const isActive = index === currentPlayerIndex;
                 const isMe = player.id === myId;
+
+                const isGraceActive = player.tresGraceExpiresAt && now < player.tresGraceExpiresAt;
+
                 const canChallenge =
                     !isMe &&
                     player.cardCount === 1 &&
                     !player.hasSaidTres &&
+                    !isGraceActive &&
                     onChallenge;
 
                 return (
