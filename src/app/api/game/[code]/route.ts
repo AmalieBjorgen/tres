@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gameStore } from '@/lib/gameStore';
-import { getClientGameState, playCards, drawCardAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
+import { getClientGameState, getPublicGameState, playCards, drawCardAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
 import { broadcastToGame } from '@/lib/pusher';
 import { CardColor } from '@/lib/types';
 
@@ -172,16 +172,17 @@ export async function POST(
         // Save updated game state
         await gameStore.setGame(result.game);
 
-        // Broadcast game update to all players
+        // Broadcast game update to all players (with public state)
+        const publicState = getPublicGameState(result.game);
         await broadcastToGame(code, 'game-updated', {
             action,
             playerId,
             timestamp: Date.now(),
+            game: publicState,
         });
 
         // Return updated state for the requesting player
         const clientState = getClientGameState(result.game, playerId);
-
         return NextResponse.json({
             success: true,
             game: clientState,

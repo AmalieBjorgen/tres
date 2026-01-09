@@ -8,6 +8,11 @@ class GameStore {
     private games: Map<string, GameState> = new Map();
     private redis: Redis | null = null;
 
+    // Tiny in-memory cache to handle bursts (especially useful for serverless Redis)
+    private lobbyCache: Map<string, { data: Lobby, expiresAt: number }> = new Map();
+    private gameCache: Map<string, { data: GameState, expiresAt: number }> = new Map();
+    private readonly CACHE_TTL = 1000; // 1 second cache
+
     constructor() {
         if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
             this.redis = new Redis({
@@ -26,15 +31,34 @@ class GameStore {
 
     // Lobby operations
     async getLobby(code: string): Promise<Lobby | undefined> {
-        const key = `lobby:${code.toUpperCase()}`;
-        if (this.redis) {
-            return (await this.redis.get<Lobby>(key)) || undefined;
-        }
-        return this.lobbies.get(code.toUpperCase());
-    }
+        const key = code.toUpperCase();
 
+        // Check cache first
+        const cached = this.lobbyCache.get(key);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.data;
+        }
+
+        let lobby: Lobby | undefined;
+        if (this.redis) {
+            lobby = (await this.redis.get<Lobby>(`lobby:${key}`)) || undefined;
+        } else {
+            lobby = this.lobbies.get(key);
+        }
+
+        // Update cache
+        if (lobby) {
+            this.lobbyCache.set(key, { data: lobby, expiresAt: Date.now() + this.CACHE_TTL });
+        }
+
+        return lobby;
+    }
     async setLobby(lobby: Lobby): Promise<void> {
         const code = lobby.code.toUpperCase();
+
+        // Update cache immediately
+        this.lobbyCache.set(code, { data: lobby, expiresAt: Date.now() + this.CACHE_TTL });
+
         if (this.redis) {
             await this.redis.set(`lobby:${code}`, lobby, { ex: 3600 }); // 1 hour TTL
             return;
@@ -43,24 +67,46 @@ class GameStore {
     }
 
     async deleteLobby(code: string): Promise<void> {
+        const key = code.toUpperCase();
+        this.lobbyCache.delete(key);
         if (this.redis) {
-            await this.redis.del(`lobby:${code.toUpperCase()}`);
+            await this.redis.del(`lobby:${key}`);
             return;
         }
-        this.lobbies.delete(code.toUpperCase());
+        this.lobbies.delete(key);
     }
 
     // Game operations
     async getGame(code: string): Promise<GameState | undefined> {
-        const key = `game:${code.toUpperCase()}`;
-        if (this.redis) {
-            return (await this.redis.get<GameState>(key)) || undefined;
+        const key = code.toUpperCase();
+
+        // Check cache first
+        const cached = this.gameCache.get(key);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.data;
         }
-        return this.games.get(code.toUpperCase());
+
+        let game: GameState | undefined;
+        if (this.redis) {
+            game = (await this.redis.get<GameState>(`game:${key}`)) || undefined;
+        } else {
+            game = this.games.get(key);
+        }
+
+        // Update cache
+        if (game) {
+            this.gameCache.set(key, { data: game, expiresAt: Date.now() + this.CACHE_TTL });
+        }
+
+        return game;
     }
 
     async setGame(game: GameState): Promise<void> {
         const code = game.id.toUpperCase();
+
+        // Update cache immediately
+        this.gameCache.set(code, { data: game, expiresAt: Date.now() + this.CACHE_TTL });
+
         if (this.redis) {
             await this.redis.set(`game:${code}`, game, { ex: 3600 }); // 1 hour TTL
             return;
@@ -69,11 +115,13 @@ class GameStore {
     }
 
     async deleteGame(code: string): Promise<void> {
+        const key = code.toUpperCase();
+        this.gameCache.delete(key);
         if (this.redis) {
-            await this.redis.del(`game:${code.toUpperCase()}`);
+            await this.redis.del(`game:${key}`);
             return;
         }
-        this.games.delete(code.toUpperCase());
+        this.games.delete(key);
     }
 
     // Clean up old lobbies and games (only relevant for in-memory)

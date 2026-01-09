@@ -12,7 +12,8 @@ import {
     ClientPlayer,
     TURN_DURATION_SECONDS,
     TRES_GRACE_PERIOD_MS,
-    GameSettings
+    GameSettings,
+    PublicGameState
 } from './types';
 import { createDeck, shuffleDeck, canPlayCard, isWildCard } from './cards';
 
@@ -769,17 +770,53 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         drawPileCount: game.drawPile.length,
         winnerId: game.winnerId,
         lastAction: game.lastAction,
-        isMyTurn: game.currentPlayerIndex === playerIndex,
+        isMyTurn: playerIndex === game.currentPlayerIndex,
         turnStartedAt: game.turnStartedAt,
         turnDuration: TURN_DURATION_SECONDS,
         currentDrawStack: game.currentDrawStack,
         podium: game.podium,
-        actionHistory: game.actionHistory || [],
+        actionHistory: game.actionHistory,
         cardsDrawnThisTurn: game.cardsDrawnThisTurn,
         settings: game.settings,
     };
 }
 
+/**
+ * Convert game state to a public version safe for broadcasting to all players.
+ * This version hides all secret tokens and private hand data.
+ */
+export function getPublicGameState(game: GameState): PublicGameState {
+    const clientPlayers: ClientPlayer[] = game.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        cardCount: p.hand.length,
+        isHost: p.isHost,
+        isConnected: p.isConnected,
+        hasSaidTres: p.hasSaidTres,
+        tresGraceExpiresAt: p.tresGraceExpiresAt,
+        rank: p.rank,
+    }));
+
+    return {
+        id: game.id,
+        status: game.status,
+        players: clientPlayers,
+        currentPlayerIndex: game.currentPlayerIndex,
+        direction: game.direction,
+        topCard: getTopCard(game),
+        currentColor: game.currentColor,
+        drawPileCount: game.drawPile.length,
+        winnerId: game.winnerId,
+        lastAction: game.lastAction,
+        turnStartedAt: game.turnStartedAt,
+        turnDuration: TURN_DURATION_SECONDS,
+        currentDrawStack: game.currentDrawStack,
+        podium: game.podium,
+        actionHistory: game.actionHistory,
+        cardsDrawnThisTurn: game.cardsDrawnThisTurn,
+        settings: game.settings,
+    };
+}
 // Handle turn timeout - player draws 5 cards and loses turn
 export function handleTurnTimeout(
     game: GameState

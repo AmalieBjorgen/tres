@@ -194,3 +194,24 @@ export interface ClientPlayer {
     tresGraceExpiresAt?: number | null;
     rank?: number;
 }
+
+// Public game state (safe for broadcasting to all players)
+export interface PublicGameState {
+    id: string;
+    status: GameStatus;
+    players: ClientPlayer[];
+    currentPlayerIndex: number;
+    direction: GameDirection;
+    topCard: Card;
+    currentColor: CardColor;
+    drawPileCount: number;
+    winnerId: string | null;
+    lastAction: GameAction | null;
+    turnStartedAt: number;
+    turnDuration: number;
+    currentDrawStack: number;
+    podium: string[];
+    actionHistory: GameAction[];
+    cardsDrawnThisTurn: number;
+    settings: GameSettings;
+}

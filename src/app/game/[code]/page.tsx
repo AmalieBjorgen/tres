@@ -79,20 +79,54 @@ export default function GamePage() {
         // Subscribe to game updates
         const unsubscribe = subscribeToGame(code, (event, data) => {
             if (event === 'game-updated') {
-                fetchGame(storedPlayerId, storedPlayerToken);
+                const update = data as { action: string, playerId: string, game?: any, timestamp: number };
+
+                // Smart update: if we received the partial state, merge it
+                if (update.game && storedPlayerId) {
+                    setGame(prev => {
+                        if (!prev) return null;
+
+                        // If the action was ours, we likely already have the full state from the POST response
+                        // but Pusher might arrive later. If it was someone else's, we definitely want the update.
+                        // We only skip the merge if the update is older than what we have.
+                        if (prev.lastAction && prev.lastAction.timestamp > update.timestamp) {
+                            return prev;
+                        }
+
+                        return {
+                            ...prev,
+                            ...update.game,
+                            // Preserve our private fields
+                            playerId: prev.playerId,
+                            playerToken: prev.playerToken,
+                            myHand: prev.myHand,
+                            // Recalculate isMyTurn from the new currentPlayerIndex
+                            isMyTurn: update.game.currentPlayerIndex === prev.players.findIndex(p => p.id === prev.playerId),
+                        };
+                    });
+
+                    // If it was a swap or we were skipped, we might still want to fetch full state to be sure
+                    // especially for Rule 7 trades which change our hand.
+                    const isPrivateChange = update.action === 'leave' || (update.game.lastAction && update.game.lastAction.swapTargetId === storedPlayerId);
+                    if (isPrivateChange || update.playerId === storedPlayerId) {
+                        fetchGame(storedPlayerId, storedPlayerToken);
+                    }
+                } else {
+                    fetchGame(storedPlayerId, storedPlayerToken);
+                }
             }
         });
 
         return () => unsubscribe();
     }, [code, router, fetchGame]);
 
-    // Polling fallback - stops when game is finished
+    // Polling fallback - significantly reduced frequency (10s)
     useEffect(() => {
         if (!playerId || !playerToken || game?.status === 'finished') return;
 
         const pollInterval = setInterval(() => {
             fetchGame(playerId, playerToken);
-        }, 2000);
+        }, 10000);
 
         return () => clearInterval(pollInterval);
     }, [playerId, playerToken, game?.status, fetchGame]);

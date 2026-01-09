@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gameStore } from '@/lib/gameStore';
-import { leaveGame } from '@/lib/game';
+import { leaveGame, getPublicGameState } from '@/lib/game';
 import { broadcastToGame } from '@/lib/pusher';
 
 // POST /api/game/[code]/leave - Leave a game
@@ -36,11 +36,13 @@ export async function POST(
 
         await gameStore.setGame(updatedGame);
 
-        // Broadcast game update
+        // Broadcast game update (with public state)
+        const publicState = getPublicGameState(updatedGame);
         await broadcastToGame(code, 'game-updated', {
             action: 'leave',
             playerId,
             timestamp: Date.now(),
+            game: publicState,
         });
 
         return NextResponse.json({
