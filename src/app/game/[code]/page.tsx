@@ -257,33 +257,6 @@ export default function GamePage() {
         }
     };
 
-    const handleDrawThreeSkip = async () => {
-        if (!game || !playerId || !game.isMyTurn) return;
-
-        try {
-            const response = await fetch(`/api/game/${code}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'draw_three_skip',
-                    playerId,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                showActionMessage(data.error || 'Cannot draw and skip');
-                return;
-            }
-
-            setGame(data.game);
-            showActionMessage('Drew 3 and skipped turn');
-            setSelectedCardIds([]);
-        } catch (err) {
-            showActionMessage('Failed to draw and skip');
-        }
-    };
 
     const handleSayTres = async () => {
         if (!game || !playerId) return;
@@ -374,7 +347,8 @@ export default function GamePage() {
             .then(data => {
                 if (data.game) {
                     setGame(data.game);
-                    showActionMessage('Time ran out! Drew 5 penalty cards.');
+                    const count = 5 + (game.currentDrawStack || 0);
+                    showActionMessage(`Time ran out! Drew ${count} penalty cards.`);
                 }
             })
             .catch(() => {
@@ -501,10 +475,11 @@ export default function GamePage() {
                         isMyTurn={game.isMyTurn}
                         onToggleCard={handleToggleCard}
                         onPlayAction={handlePlaySelected}
-                        onDrawAction={game.currentDrawStack > 0 ? handleDrawCard : handleDrawThreeSkip}
+                        onDrawAction={handleDrawCard}
                         selectedCardIds={selectedCardIds}
                         currentDrawStack={game.currentDrawStack}
                         playingCardIds={playingCardIds}
+                        cardsDrawnThisTurn={game.cardsDrawnThisTurn}
                     />
                 </div>
             </main>

@@ -17,6 +17,7 @@ interface HandProps {
     selectedCardIds?: string[];
     currentDrawStack?: number;
     playingCardIds?: string[];
+    cardsDrawnThisTurn?: number;
 }
 
 const PlayIcon = () => (
@@ -43,6 +44,7 @@ export function Hand({
     selectedCardIds = [],
     currentDrawStack = 0,
     playingCardIds = [],
+    cardsDrawnThisTurn = 0,
 }: HandProps) {
     const [sortMode, setSortMode] = useState<'color' | 'value'>('color');
     const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
@@ -122,11 +124,11 @@ export function Hand({
                     <button
                         className={`${styles.actionButton} ${styles.drawButton}`}
                         onClick={onDrawAction}
-                        title={currentDrawStack > 0 ? `Draw ${currentDrawStack} penalty` : "Draw 3 & Skip"}
+                        title={currentDrawStack > 0 ? `Draw ${currentDrawStack} penalty` : `Draw card (${cardsDrawnThisTurn}/3)`}
                     >
                         <DrawIcon />
                         <span className={styles.buttonLabel}>
-                            {currentDrawStack > 0 ? `+${currentDrawStack}` : 'Skip'}
+                            {currentDrawStack > 0 ? `+${currentDrawStack}` : `${cardsDrawnThisTurn}/3`}
                         </span>
                     </button>
                 )}
@@ -150,11 +152,11 @@ export function Hand({
                 <button
                     className={`${styles.actionButton} ${styles.drawButton}`}
                     onClick={onDrawAction}
-                    title={currentDrawStack > 0 ? `Draw ${currentDrawStack} penalty` : "Draw 3 & Skip"}
+                    title={currentDrawStack > 0 ? `Draw ${currentDrawStack} penalty` : `Draw card (${cardsDrawnThisTurn}/3)`}
                 >
                     <DrawIcon />
                     <span className={styles.buttonLabel}>
-                        {currentDrawStack > 0 ? `+${currentDrawStack}` : 'Skip'}
+                        {currentDrawStack > 0 ? `+${currentDrawStack}` : `${cardsDrawnThisTurn}/3`}
                     </span>
                 </button>
             )}
@@ -169,7 +171,7 @@ export function Hand({
 
                         if (isMyTurn && selectedCardIds.length > 0) {
                             const firstSelectedId = selectedCardIds[0];
-                            const firstSelectedCard = cards.find(c => c.id === firstSelectedId);
+                            const firstSelectedCard = cards.find(c => c.id === firstId);
                             if (firstSelectedCard?.type === 'number' && card.type === 'number' && firstSelectedCard.value === card.value) {
                                 isPlayable = true;
                             }

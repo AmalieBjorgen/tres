@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gameStore } from '@/lib/gameStore';
-import { getClientGameState, playCards, drawCardAction, drawThreeSkipAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
+import { getClientGameState, playCards, drawCardAction, sayTres, challengeTres, handleTurnTimeout, isTurnTimedOut } from '@/lib/game';
 import { broadcastToGame } from '@/lib/pusher';
 import { CardColor } from '@/lib/types';
 
@@ -110,10 +110,6 @@ export async function POST(
 
             case 'draw_card':
                 result = drawCardAction(currentGame, playerId);
-                break;
-
-            case 'draw_three_skip':
-                result = drawThreeSkipAction(currentGame, playerId);
                 break;
 
             case 'say_tres':
