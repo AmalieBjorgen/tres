@@ -64,6 +64,8 @@ export function GameBoard({
                         <div className={styles.drawPileCard}><Card faceDown /></div>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
                         <div className={styles.drawPileCard}><Card faceDown /></div>
+                        <div className={styles.drawPileCard}><Card faceDown /></div>
+                        <div className={styles.drawPileCard}><Card faceDown /></div>
                         <div className={styles.drawPileBadge}>{drawPileCount}</div>
                     </div>
                 </div>

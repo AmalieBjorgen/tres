@@ -41,7 +41,9 @@
 }
 
 .handCard:hover {
-    z-index: 10;
+    z-index: 20;
+    transform: translateY(-20px) rotate(2deg) scale(1.1);
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
 }
 
 /* Action Buttons Flanking Hand */

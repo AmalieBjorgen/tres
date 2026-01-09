@@ -21,6 +21,13 @@
 .playerActive {
     border-color: var(--color-primary);
     box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    z-index: 2;
+}
+
+.playerNext {
+    border-style: dashed;
+    border-color: var(--color-primary-light);
+    opacity: 0.9;
 }
 
 .playerDisconnected {
@@ -70,6 +77,17 @@
     color: white;
     border-radius: var(--radius-sm);
     font-weight: 700;
+}
+
+.nextBadge {
+    font-size: 0.625rem;
+    padding: 1px 4px;
+    background: var(--bg-tertiary);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .playerCardCount {

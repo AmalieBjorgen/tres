@@ -13,6 +13,7 @@ import { PlayerList } from '@/components/PlayerList';
 import { ColorPicker } from '@/components/ColorPicker';
 import { TresButton } from '@/components/TresButton';
 import { ActionLog } from '@/components/ActionLog';
+import { getNextPlayerIndex } from '@/lib/game';
 import styles from './page.module.css';
 
 export default function GamePage() {
@@ -29,7 +30,10 @@ export default function GamePage() {
     const [playingCardIds, setPlayingCardIds] = useState<string[]>([]);
     const [actionMessage, setActionMessage] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);
+    const [currentEffect, setCurrentEffect] = useState<string | null>(null);
+    const [isShaking, setIsShaking] = useState(false);
     const timeoutTriggeredRef = useRef<number | null>(null);
+    const prevIsMyTurnRef = useRef(false);
 
     const fetchGame = useCallback(async (pid: string) => {
         try {
@@ -83,6 +87,48 @@ export default function GamePage() {
             clearInterval(pollInterval);
         };
     }, [code, router, fetchGame]);
+
+    // Action effects handler
+    useEffect(() => {
+        if (!game?.lastAction) return;
+
+        const action = game.lastAction;
+        const now = Date.now();
+        // Only react to "fresh" actions (within last 3 seconds)
+        if (now - action.timestamp > 3000) return;
+
+        if (action.type === 'play_card') {
+            if (game.topCard.type === 'reverse') {
+                setCurrentEffect('REVERSE!');
+                setTimeout(() => setCurrentEffect(null), 1500);
+            } else if (game.topCard.type === 'skip') {
+                setCurrentEffect('SKIPPED!');
+                setTimeout(() => setCurrentEffect(null), 1500);
+            } else if (game.topCard.type === 'wild_draw_four' || game.topCard.type === 'draw_two') {
+                setIsShaking(true);
+                setTimeout(() => setIsShaking(false), 500);
+            }
+        } else if (action.type === 'draw_card' && (action.cardCount || 0) > 1) {
+            setIsShaking(true);
+            setTimeout(() => setIsShaking(false), 500);
+        } else if (action.type === 'challenge_tres') {
+            setCurrentEffect('CHALLENGED!');
+            setIsShaking(true);
+            setTimeout(() => {
+                setCurrentEffect(null);
+                setIsShaking(false);
+            }, 1000);
+        }
+    }, [game?.lastAction?.timestamp]);
+
+    // Turn change toast
+    useEffect(() => {
+        if (game?.isMyTurn && !prevIsMyTurnRef.current) {
+            setCurrentEffect('YOUR TURN');
+            setTimeout(() => setCurrentEffect(null), 2000);
+        }
+        prevIsMyTurnRef.current = !!game?.isMyTurn;
+    }, [game?.isMyTurn]);
 
     const showActionMessage = (message: string) => {
         setActionMessage(message);
@@ -366,8 +412,19 @@ export default function GamePage() {
     const canSayTres = myPlayer?.cardCount === 1 && !myPlayer?.hasSaidTres;
     const hasSaidTres = myPlayer?.hasSaidTres ?? false;
 
+    const nextPlayerIndex = game ? getNextPlayerIndex(game as any) : -1;
+
     return (
-        <div className={styles.game}>
+        <div className={`
+            ${styles.game} 
+            ${game.isMyTurn ? styles.isMyTurn : ''}
+            ${isShaking ? styles.shaking : ''}
+        `}>
+            {currentEffect && (
+                <div className={styles.effectOverlay}>
+                    <div className={styles.effectText}>{currentEffect}</div>
+                </div>
+            )}
             <header className={styles.gameHeader}>
                 <div className={styles.headerLeft}>
                     <span className={styles.gameLogo}>TRES</span>
@@ -408,6 +465,7 @@ export default function GamePage() {
                             <PlayerList
                                 players={game.players}
                                 currentPlayerIndex={game.currentPlayerIndex}
+                                nextPlayerIndex={nextPlayerIndex}
                                 myId={playerId}
                                 onChallenge={handleChallenge}
                             />

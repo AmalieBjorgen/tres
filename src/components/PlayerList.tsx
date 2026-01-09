@@ -8,12 +8,14 @@ interface PlayerListProps {
     players: ClientPlayer[];
     currentPlayerIndex: number;
     myId: string;
+    nextPlayerIndex?: number;
     onChallenge?: (playerId: string) => void;
 }
 
 export function PlayerList({
     players,
     currentPlayerIndex,
+    nextPlayerIndex,
     myId,
     onChallenge,
 }: PlayerListProps) {
@@ -28,6 +30,7 @@ export function PlayerList({
         <div className={styles.playerList}>
             {players.map((player, index) => {
                 const isActive = index === currentPlayerIndex;
+                const isNext = index === nextPlayerIndex;
                 const isMe = player.id === myId;
 
                 const isGraceActive = player.tresGraceExpiresAt && now < player.tresGraceExpiresAt;
@@ -45,6 +48,7 @@ export function PlayerList({
                         className={`
               ${styles.player}
               ${isActive ? styles.playerActive : ''}
+              ${isNext ? styles.playerNext : ''}
               ${!player.isConnected ? styles.playerDisconnected : ''}
             `}
                     >
@@ -56,6 +60,7 @@ export function PlayerList({
                                 {player.name}
                                 {isMe && ' (You)'}
                                 {player.isHost && <span className={styles.playerHost}>HOST</span>}
+                                {isNext && !isActive && <span className={styles.nextBadge}>NEXT</span>}
                             </div>
                             <div className={styles.playerCardCount}>
                                 <span className={styles.playerCardIcon}>🃏</span>
