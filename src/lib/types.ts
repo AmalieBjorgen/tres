@@ -51,6 +51,7 @@ export interface GameState {
     currentDrawStack: number; // Accumulated cards to draw from stacking (+2/+4)
     podium: string[]; // Ordered list of player IDs who finished
     actionHistory: GameAction[]; // List of historical actions
+    cardsDrawnThisTurn: number; // For "draw up to 3" rule
 }
 
 // Lobby (waiting room before game starts)
@@ -160,6 +161,7 @@ export interface ClientGameState {
     currentDrawStack: number;
     podium: string[];
     actionHistory: GameAction[];
+    cardsDrawnThisTurn: number;
 }
 
 export interface ClientPlayer {

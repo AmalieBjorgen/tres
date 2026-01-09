@@ -16,41 +16,43 @@ function createCard(type: CardType, color: CardColor | null, value: number | nul
 }
 
 // Create a standard Tres deck (108 cards like Uno)
-export function createDeck(): Card[] {
+export function createDeck(numDecks: number = 1): Card[] {
     const deck: Card[] = [];
     const colors: CardColor[] = ['red', 'blue', 'green', 'yellow'];
 
-    for (const color of colors) {
-        // One 0 card per color
-        deck.push(createCard('number', color, 0));
+    for (let d = 0; d < numDecks; d++) {
+        for (const color of colors) {
+            // One 0 card per color
+            deck.push(createCard('number', color, 0));
 
-        // Two of each 1-9 per color
-        for (let value = 1; value <= 9; value++) {
-            deck.push(createCard('number', color, value));
-            deck.push(createCard('number', color, value));
+            // Two of each 1-9 per color
+            for (let value = 1; value <= 9; value++) {
+                deck.push(createCard('number', color, value));
+                deck.push(createCard('number', color, value));
+            }
+
+            // Two Skip cards per color
+            deck.push(createCard('skip', color, null));
+            deck.push(createCard('skip', color, null));
+
+            // Two Reverse cards per color
+            deck.push(createCard('reverse', color, null));
+            deck.push(createCard('reverse', color, null));
+
+            // Two Draw Two cards per color
+            deck.push(createCard('draw_two', color, null));
+            deck.push(createCard('draw_two', color, null));
         }
 
-        // Two Skip cards per color
-        deck.push(createCard('skip', color, null));
-        deck.push(createCard('skip', color, null));
+        // Four Wild cards
+        for (let i = 0; i < 4; i++) {
+            deck.push(createCard('wild', null, null));
+        }
 
-        // Two Reverse cards per color
-        deck.push(createCard('reverse', color, null));
-        deck.push(createCard('reverse', color, null));
-
-        // Two Draw Two cards per color
-        deck.push(createCard('draw_two', color, null));
-        deck.push(createCard('draw_two', color, null));
-    }
-
-    // Four Wild cards
-    for (let i = 0; i < 4; i++) {
-        deck.push(createCard('wild', null, null));
-    }
-
-    // Four Wild Draw Four cards
-    for (let i = 0; i < 4; i++) {
-        deck.push(createCard('wild_draw_four', null, null));
+        // Four Wild Draw Four cards
+        for (let i = 0; i < 4; i++) {
+            deck.push(createCard('wild_draw_four', null, null));
+        }
     }
 
     return deck;
