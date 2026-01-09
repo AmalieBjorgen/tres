@@ -259,6 +259,12 @@ export function drawCards(game: GameState, count: number): { cards: Card[]; game
             drawPile = [...drawPile, ...shuffled];
             discardPile = [topCard];
         }
+
+        // Fresh deck fallback: If it's STILL insufficient (e.g., everyone has huge hands), inject a fresh deck
+        if (drawPile.length < count) {
+            const freshDeck = shuffleDeck(createDeck(1));
+            drawPile = [...drawPile, ...freshDeck];
+        }
     }
 
     const actualDrawCount = Math.min(count, drawPile.length);
