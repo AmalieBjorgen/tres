@@ -77,7 +77,16 @@ export function addPlayerToLobby(lobby: Lobby, playerName: string): { lobby: Lob
 
 // Initialize a new game from a lobby
 export function initializeGame(lobby: Lobby): GameState {
-    const deck = shuffleDeck(createDeck());
+    const playerCount = lobby.players.length;
+    let numDecks = 1;
+
+    if (playerCount > 10) {
+        numDecks = 3;
+    } else if (playerCount > 6) {
+        numDecks = 2;
+    }
+
+    const deck = shuffleDeck(createDeck(numDecks));
 
     // Create players from lobby
     const players: Player[] = lobby.players.map((lp) => ({
@@ -135,6 +144,7 @@ export function initializeGame(lobby: Lobby): GameState {
         currentDrawStack: 0,
         podium: [],
         actionHistory: [],
+        cardsDrawnThisTurn: 0,
     };
 
     return gameState;
@@ -316,6 +326,7 @@ export function playCards(
         discardPile: newDiscardPile,
         currentColor: newColor,
         currentDrawStack: newDrawStack,
+        cardsDrawnThisTurn: 0, // Reset draw count on play
     };
 
     const action: GameAction = {
@@ -403,24 +414,21 @@ export function drawCardAction(
         return { success: false, game, error: 'Not your turn' };
     }
 
-    let currentGameState = game;
-    let accumulatedDrawnCards: Card[] = [];
-
     // 1. If there's a stacking penalty, the player MUST draw the stack
     if (game.currentDrawStack > 0) {
         const { cards, game: stateAfterDraw } = drawCards(game, game.currentDrawStack);
-        accumulatedDrawnCards = cards;
-        currentGameState = stateAfterDraw;
+        const accumulatedDrawnCards = cards;
 
-        const updatedPlayers = currentGameState.players.map((p) =>
+        const updatedPlayers = stateAfterDraw.players.map((p) =>
             p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
         );
 
         const newGame: GameState = {
-            ...currentGameState,
+            ...stateAfterDraw,
             players: updatedPlayers,
             currentDrawStack: 0, // Reset stack
-            currentPlayerIndex: getNextPlayerIndex(currentGameState),
+            cardsDrawnThisTurn: 0, // Reset draw count
+            currentPlayerIndex: getNextPlayerIndex(stateAfterDraw),
             turnStartedAt: Date.now(),
         };
 
@@ -434,84 +442,42 @@ export function drawCardAction(
         return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
     }
 
-    // 2. Normal draw (draw up to 3 or until a playable one is found)
-    const topCard = getTopCard(game);
-    const { currentColor } = game;
-
-    for (let i = 0; i < 3; i++) {
-        const { cards, game: stateAfterDraw } = drawCards(currentGameState, 1);
-        if (cards.length === 0) break;
-
-        const drawnCard = cards[0];
-        accumulatedDrawnCards.push(drawnCard);
-        currentGameState = stateAfterDraw;
-
-        if (canPlayCard(drawnCard, topCard, currentColor)) {
-            break;
-        }
+    // 2. Normal draw (draw 1 card, up to 3 times)
+    if (game.cardsDrawnThisTurn >= 3) {
+        return { success: false, game, error: 'Already drawn 3 cards this turn' };
     }
 
-    if (accumulatedDrawnCards.length === 0) {
-        return { success: false, game, error: 'No cards to draw' };
+    const { cards: drawnCards, game: stateAfterDraw } = drawCards(game, 1);
+    if (drawnCards.length === 0) {
+        return { success: false, game, error: 'No cards left in draw pile' };
     }
 
-    const updatedPlayers = currentGameState.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
+    const drawnCard = drawnCards[0];
+    const newCardsDrawnCount = game.cardsDrawnThisTurn + 1;
+
+    const updatedPlayers = stateAfterDraw.players.map((p) =>
+        p.id === playerId ? { ...p, hand: [...p.hand, drawnCard], hasSaidTres: false, tresGraceExpiresAt: null } : p
     );
 
+    // If it was the 3rd draw, the turn is skipped automatically
+    const shouldSkip = newCardsDrawnCount >= 3;
+
     const newGame: GameState = {
-        ...currentGameState,
+        ...stateAfterDraw,
         players: updatedPlayers,
-        currentPlayerIndex: getNextPlayerIndex(currentGameState),
-        turnStartedAt: Date.now(),
+        cardsDrawnThisTurn: shouldSkip ? 0 : newCardsDrawnCount,
+        currentPlayerIndex: shouldSkip ? getNextPlayerIndex(stateAfterDraw) : game.currentPlayerIndex,
+        turnStartedAt: shouldSkip ? Date.now() : game.turnStartedAt,
     };
 
     const action: GameAction = {
         type: 'draw_card',
         playerId,
-        cardCount: accumulatedDrawnCards.length,
+        cardCount: 1,
         timestamp: Date.now(),
     };
 
-    return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
-}
-
-// Special action: Draw 3 and skip turn
-export function drawThreeSkipAction(
-    game: GameState,
-    playerId: string
-): { success: boolean; game: GameState; drawnCards?: Card[]; error?: string } {
-    const currentPlayer = getCurrentPlayer(game);
-    if (currentPlayer.id !== playerId) {
-        return { success: false, game, error: 'Not your turn' };
-    }
-
-    // If there's a stack, they should use drawCardAction to draw the stack instead
-    if (game.currentDrawStack > 0) {
-        return drawCardAction(game, playerId);
-    }
-
-    const { cards: accumulatedDrawnCards, game: currentGameState } = drawCards(game, 3);
-
-    const updatedPlayers = currentGameState.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
-    );
-
-    const newGame: GameState = {
-        ...currentGameState,
-        players: updatedPlayers,
-        currentPlayerIndex: getNextPlayerIndex(currentGameState),
-        turnStartedAt: Date.now(),
-    };
-
-    const action: GameAction = {
-        type: 'draw_three_skip',
-        playerId,
-        cardCount: accumulatedDrawnCards.length,
-        timestamp: Date.now(),
-    };
-
-    return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
+    return { success: true, game: recordAction(newGame, action), drawnCards: [drawnCard] };
 }
 
 // Say "TRES!" when down to one card
@@ -615,6 +581,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         currentDrawStack: game.currentDrawStack,
         podium: game.podium,
         actionHistory: game.actionHistory || [],
+        cardsDrawnThisTurn: game.cardsDrawnThisTurn,
     };
 }
 
@@ -627,9 +594,10 @@ export function handleTurnTimeout(
     }
 
     const currentPlayer = getCurrentPlayer(game);
+    const penaltyCount = 5 + game.currentDrawStack;
 
-    // Draw 5 cards as penalty
-    const { cards: drawnCards, game: afterDraw } = drawCards(game, 5);
+    // Draw penalty cards
+    const { cards: drawnCards, game: afterDraw } = drawCards(game, penaltyCount);
 
     // Add cards to current player's hand
     const updatedPlayers = afterDraw.players.map((p) =>
@@ -638,19 +606,20 @@ export function handleTurnTimeout(
             : p
     );
 
-    // Move to next player and reset turn timer
+    // Move to next player, reset turn timer and draw tracking
     const newGameState: GameState = {
         ...afterDraw,
         players: updatedPlayers,
         currentPlayerIndex: getNextPlayerIndex(afterDraw),
         turnStartedAt: Date.now(),
-        currentDrawStack: 0, // Reset stack
+        currentDrawStack: 0,
+        cardsDrawnThisTurn: 0,
     };
 
     const action: GameAction = {
         type: 'draw_card',
         playerId: currentPlayer.id,
-        cardCount: 5 + game.currentDrawStack,
+        cardCount: penaltyCount,
         timestamp: Date.now(),
     };
 
