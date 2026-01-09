@@ -80,7 +80,7 @@ export function Hand({
         if (addedCardIds.size > 0) {
             setNewCardIds(addedCardIds);
             const timer = setTimeout(() => setNewCardIds(new Set()), 600);
-            prevCardIdsRef.current = currentCardIds; // Update here too
+            prevCardIdsRef.current = currentCardIds;
             return () => clearTimeout(timer);
         }
 
@@ -91,29 +91,28 @@ export function Hand({
     useEffect(() => {
         const sortedHand = sortCards(cards);
 
-        // If cards were in our display list but are now gone and are in playingCardIds, keep them as ghosts
-        const removedButPlaying = displayCards.filter(c =>
-            !cards.find(nc => nc.id === c.id) &&
-            playingCardIds.includes(c.id) &&
-            !ghostCards.find(gc => gc.id === c.id)
-        );
+        // Which cards were just played? (exist in playingCardIds but no longer in cards)
+        const ghostIds = playingCardIds.filter(id => !cards.find(c => c.id === id));
 
-        if (removedButPlaying.length > 0) {
-            const nextGhosts = [...ghostCards, ...removedButPlaying];
-            setGhostCards(nextGhosts);
-            setDisplayCards([...sortedHand, ...nextGhosts]);
+        if (ghostIds.length > 0) {
+            // We need to find the card objects for these IDs from our previous displayCards
+            const ghostObjects = displayCards.filter(c => ghostIds.includes(c.id));
 
-            const timer = setTimeout(() => {
-                setGhostCards([]);
-                setDisplayCards(sortedHand);
-            }, 400);
-            return () => clearTimeout(timer);
-        } else {
-            // Sync displayCards with sorted cards if no new ghosts
-            if (ghostCards.length === 0) {
-                setDisplayCards(sortedHand);
+            if (ghostObjects.length > 0) {
+                setGhostCards(ghostObjects);
+                setDisplayCards([...sortedHand, ...ghostObjects]);
+
+                const timer = setTimeout(() => {
+                    setGhostCards([]);
+                    setDisplayCards(sortedHand);
+                }, 400);
+                return () => clearTimeout(timer);
             }
         }
+
+        // If no active ghosting, always sync with sorted hand
+        setGhostCards([]);
+        setDisplayCards(sortedHand);
     }, [cards, playingCardIds, sortMode]);
 
     if (displayCards.length === 0) {
