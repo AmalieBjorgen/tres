@@ -144,7 +144,7 @@ export function initializeGame(lobby: Lobby): GameState {
  * Adds an action to the game history and keeps it within limits
  */
 function recordAction(game: GameState, action: GameAction): GameState {
-    const actionHistory = [action, ...(game.actionHistory || [])].slice(0, 50);
+    const actionHistory = [action, ...(game.actionHistory || [])].slice(0, 5);
     return {
         ...game,
         lastAction: action,
