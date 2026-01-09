@@ -189,7 +189,31 @@ function recordAction(game: GameState, action: GameAction): GameState {
     };
 }
 
-// Get the current player
+/**
+ * Update a player's hand and reset their Tres status.
+ * Optionally set a grace period for calling TRES.
+ */
+function updatePlayerHand(
+    players: Player[],
+    playerId: string,
+    newHand: Card[],
+    gracePeriodMs?: number | null
+): Player[] {
+    return players.map((p) =>
+        p.id === playerId
+            ? {
+                ...p,
+                hand: newHand,
+                hasSaidTres: false,
+                tresGraceExpiresAt: gracePeriodMs ? Date.now() + gracePeriodMs : null,
+            }
+            : p
+    );
+}
+
+/**
+ * Get the current player
+ */
 export function getCurrentPlayer(game: GameState): Player {
     return game.players[game.currentPlayerIndex];
 }
@@ -399,19 +423,9 @@ export function playCards(
     const isJumpIn = game.currentPlayerIndex !== playerIndex;
 
     // Remove cards from player's hand and handle Tres grace period
-    const updatedPlayers = game.players.map((p) => {
-        if (p.id === playerId) {
-            const targetCount = game.settings.tresRuleset ? 3 : 1;
-            const hasTargetCount = playerHand.length === targetCount;
-            return {
-                ...p,
-                hand: playerHand,
-                hasSaidTres: false,
-                tresGraceExpiresAt: hasTargetCount ? Date.now() + TRES_GRACE_PERIOD_MS : null
-            };
-        }
-        return p;
-    });
+    const targetCount = game.settings.tresRuleset ? 3 : 1;
+    const gracePeriod = playerHand.length === targetCount ? TRES_GRACE_PERIOD_MS : null;
+    const updatedPlayers = updatePlayerHand(game.players, playerId, playerHand, gracePeriod);
 
     // Add cards to discard pile
     const newDiscardPile = [...game.discardPile, ...cardsToPlay];
@@ -557,9 +571,7 @@ export function drawCardAction(
         const { cards, game: stateAfterDraw } = drawCards(game, game.currentDrawStack);
         const accumulatedDrawnCards = cards;
 
-        const updatedPlayers = stateAfterDraw.players.map((p) =>
-            p.id === playerId ? { ...p, hand: [...p.hand, ...accumulatedDrawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
-        );
+        const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, ...accumulatedDrawnCards]);
 
         const newGame: GameState = {
             ...stateAfterDraw,
@@ -590,6 +602,7 @@ export function drawCardAction(
         const drawnCards: Card[] = [];
         let currentState = game;
         let foundPlayable = false;
+        const player = game.players.find(p => p.id === playerId)!; // Player must exist
 
         while (!foundPlayable) {
             const { cards, game: nextState } = drawCards(currentState, 1);
@@ -610,9 +623,7 @@ export function drawCardAction(
             }
         }
 
-        const updatedPlayers = currentState.players.map((p) =>
-            p.id === playerId ? { ...p, hand: [...p.hand, ...drawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
-        );
+        const updatedPlayers = updatePlayerHand(currentState.players, playerId, [...player.hand, ...drawnCards]);
 
         const newGame: GameState = {
             ...currentState,
@@ -646,9 +657,7 @@ export function drawCardAction(
     const drawnCard = drawnCards[0];
     const newCardsDrawnCount = game.cardsDrawnThisTurn + 1;
 
-    const updatedPlayers = stateAfterDraw.players.map((p) =>
-        p.id === playerId ? { ...p, hand: [...p.hand, drawnCard], hasSaidTres: false, tresGraceExpiresAt: null } : p
-    );
+    const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard]);
 
     // If it was the 3rd draw, the turn is skipped automatically
     const shouldSkip = newCardsDrawnCount >= 3;
@@ -835,11 +844,7 @@ export function handleTurnTimeout(
     const { cards: drawnCards, game: afterDraw } = drawCards(game, penaltyCount);
 
     // Add cards to current player's hand
-    const updatedPlayers = afterDraw.players.map((p) =>
-        p.id === currentPlayer.id
-            ? { ...p, hand: [...p.hand, ...drawnCards], hasSaidTres: false, tresGraceExpiresAt: null }
-            : p
-    );
+    const updatedPlayers = updatePlayerHand(afterDraw.players, currentPlayer.id, [...currentPlayer.hand, ...drawnCards]);
 
     // Move to next player, reset turn timer and draw tracking
     const newGameState: GameState = {
