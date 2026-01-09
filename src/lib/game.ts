@@ -11,9 +11,16 @@ import {
     ClientGameState,
     ClientPlayer,
     TURN_DURATION_SECONDS,
-    TRES_GRACE_PERIOD_MS
+    TRES_GRACE_PERIOD_MS,
+    GameSettings
 } from './types';
 import { createDeck, shuffleDeck, canPlayCard, isWildCard } from './cards';
+
+export const DEFAULT_SETTINGS: GameSettings = {
+    tresRuleset: false,
+    swapOnZero: false,
+    swapOnSeven: false,
+};
 
 // Generate a random lobby code (6 characters)
 export function generateLobbyCode(): string {
@@ -47,6 +54,7 @@ export function createLobby(hostName: string): { lobby: Lobby; hostId: string } 
         ],
         createdAt: Date.now(),
         maxPlayers: 15,
+        settings: { ...DEFAULT_SETTINGS },
     };
     return { lobby, hostId };
 }
@@ -125,6 +133,9 @@ export function initializeGame(lobby: Lobby): GameState {
         ...drawPile.slice(startingCardIndex + 1),
     ];
 
+    // Ensure we don't start with a 0 or 7 if those rules are active (to keep it simple)
+    // Actually, following standard Uno, we can just let it be, but Rule 0/7 usually only trigger on PLAY.
+
     // Randomly select starting player
     const startingPlayerIndex = Math.floor(Math.random() * players.length);
 
@@ -145,6 +156,7 @@ export function initializeGame(lobby: Lobby): GameState {
         podium: [],
         actionHistory: [],
         cardsDrawnThisTurn: 0,
+        settings: { ...lobby.settings },
     };
 
     return gameState;
@@ -229,7 +241,8 @@ export function playCards(
     game: GameState,
     playerId: string,
     cardIds: string[],
-    chosenColor?: CardColor
+    chosenColor?: CardColor,
+    swapTargetId?: string
 ): { success: boolean; game: GameState; error?: string } {
     if (cardIds.length === 0) {
         return { success: false, game, error: 'No cards selected' };
@@ -291,15 +304,36 @@ export function playCards(
         return { success: false, game, error: 'Must choose a color for wild card' };
     }
 
+    // 4. Tres Ruleset Finish Validation
+    if (game.settings.tresRuleset && cardPool.length === 0) {
+        if (cardsToPlay.length < 3) {
+            return { success: false, game, error: 'Tres ruleset: Must play at least 3 cards to win' };
+        }
+    }
+
+    // 5. Rule 7 Validation
+    if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7) {
+        if (!swapTargetId) {
+            return { success: false, game, error: 'Must select a player to swap hands with' };
+        }
+        if (swapTargetId === playerId) {
+            return { success: false, game, error: 'Cannot swap hands with yourself' };
+        }
+        if (!game.players.find(p => p.id === swapTargetId)) {
+            return { success: false, game, error: 'Target player not found' };
+        }
+    }
+
     // Remove cards from player's hand and handle Tres grace period
     const updatedPlayers = game.players.map((p) => {
         if (p.id === playerId) {
-            const hasOneCard = cardPool.length === 1;
+            const targetCount = game.settings.tresRuleset ? 3 : 1;
+            const hasTargetCount = cardPool.length === targetCount;
             return {
                 ...p,
                 hand: cardPool,
                 hasSaidTres: false,
-                tresGraceExpiresAt: hasOneCard ? Date.now() + TRES_GRACE_PERIOD_MS : null
+                tresGraceExpiresAt: hasTargetCount ? Date.now() + TRES_GRACE_PERIOD_MS : null
             };
         }
         return p;
@@ -319,10 +353,38 @@ export function playCards(
         if (card.type === 'wild_draw_four') newDrawStack += 4;
     }
 
+    // Handle Rule 0 (Swap All)
+    let finalPlayers = [...updatedPlayers];
+    if (game.settings.swapOnZero && firstCard.type === 'number' && firstCard.value === 0) {
+        const hands = finalPlayers.map(p => p.hand);
+        const playerCount = finalPlayers.length;
+        const step = game.direction === 'clockwise' ? 1 : -1;
+
+        finalPlayers = finalPlayers.map((player, index) => {
+            const sourceIndex = (index - step + playerCount) % playerCount;
+            return {
+                ...player,
+                hand: hands[sourceIndex]
+            };
+        });
+    }
+
+    // Handle Rule 7 (Trade Hands)
+    if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7 && swapTargetId) {
+        const playerIndex = finalPlayers.findIndex(p => p.id === playerId);
+        const targetIndex = finalPlayers.findIndex(p => p.id === swapTargetId);
+
+        const playerHand = [...finalPlayers[playerIndex].hand];
+        const targetHand = [...finalPlayers[targetIndex].hand];
+
+        finalPlayers[playerIndex] = { ...finalPlayers[playerIndex], hand: targetHand };
+        finalPlayers[targetIndex] = { ...finalPlayers[targetIndex], hand: playerHand };
+    }
+
     // Apply card effects
     let newGame: GameState = {
         ...game,
-        players: updatedPlayers,
+        players: finalPlayers,
         discardPile: newDiscardPile,
         currentColor: newColor,
         currentDrawStack: newDrawStack,
@@ -334,6 +396,7 @@ export function playCards(
         playerId,
         cardIds,
         chosenColor,
+        swapTargetId,
         timestamp: Date.now(),
     };
 
@@ -399,9 +462,10 @@ export function playCard(
     game: GameState,
     playerId: string,
     cardId: string,
-    chosenColor?: CardColor
+    chosenColor?: CardColor,
+    swapTargetId?: string
 ): { success: boolean; game: GameState; error?: string } {
-    return playCards(game, playerId, [cardId], chosenColor);
+    return playCards(game, playerId, [cardId], chosenColor, swapTargetId);
 }
 
 // Draw cards (when player can't play or chooses to draw)
@@ -490,8 +554,9 @@ export function sayTres(
         return { success: false, game, error: 'Player not found' };
     }
 
-    if (player.hand.length !== 1) {
-        return { success: false, game, error: 'Can only say TRES with one card' };
+    const targetCount = game.settings.tresRuleset ? 3 : 1;
+    if (player.hand.length !== targetCount) {
+        return { success: false, game, error: `Can only say TRES with ${targetCount} card(s)` };
     }
 
     const updatedPlayers = game.players.map((p) =>
@@ -521,10 +586,11 @@ export function challengeTres(
         return { success: false, game, error: 'Target player not found' };
     }
 
+    const targetCount = game.settings.tresRuleset ? 3 : 1;
     const now = Date.now();
     const isGraceActive = target.tresGraceExpiresAt && now < target.tresGraceExpiresAt;
 
-    if (target.hand.length !== 1 || target.hasSaidTres || isGraceActive) {
+    if (target.hand.length !== targetCount || target.hasSaidTres || isGraceActive) {
         return { success: false, game, error: isGraceActive ? 'Grace period active' : 'Invalid challenge' };
     }
 
@@ -582,6 +648,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         podium: game.podium,
         actionHistory: game.actionHistory || [],
         cardsDrawnThisTurn: game.cardsDrawnThisTurn,
+        settings: game.settings,
     };
 }
 

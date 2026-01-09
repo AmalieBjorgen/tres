@@ -72,7 +72,7 @@ export default function LobbyPage() {
 
         // Subscribe to lobby updates
         const unsubscribe = subscribeToLobby(code, (event, data) => {
-            if (event === 'player-joined' || event === 'player-left') {
+            if (event === 'player-joined' || event === 'player-left' || event === 'lobby-updated') {
                 const eventData = data as { lobby: Lobby };
                 setLobby(eventData.lobby);
             } else if (event === 'game-started') {
@@ -88,6 +88,41 @@ export default function LobbyPage() {
             clearInterval(pollInterval);
         };
     }, [code, router, fetchLobby]);
+
+    const handleUpdateSettings = async (settingName: keyof Lobby['settings'], value: boolean) => {
+        if (!lobby || !playerId || lobby.hostId !== playerId) return;
+
+        const newSettings = {
+            ...lobby.settings,
+            [settingName]: value,
+        };
+
+        // Optimistic update
+        setLobby({
+            ...lobby,
+            settings: newSettings,
+        });
+
+        try {
+            const response = await fetch(`/api/lobby/${code}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    playerId,
+                    settings: newSettings,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to update settings');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to update settings');
+            // Revert on error
+            fetchLobby();
+        }
+    };
 
     const handleCopyCode = async () => {
         try {
@@ -232,6 +267,70 @@ export default function LobbyPage() {
                             </div>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            <div className={styles.settingsSection}>
+                <h2 className={styles.settingsSectionTitle}>
+                    ⚙️ Game Rules
+                </h2>
+                <div className={styles.settingsList}>
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Tres Ruleset</p>
+                            <p className={styles.settingDescription}>
+                                Win by playing 3+ cards at once. Call TRES! at 3 cards remaining.
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.tresRuleset}
+                                onChange={(e) => handleUpdateSettings('tresRuleset', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Rule 0 (Swap Hands)</p>
+                            <p className={styles.settingDescription}>
+                                Playing a 0 makes everyone swap hands in the current play direction.
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.swapOnZero}
+                                onChange={(e) => handleUpdateSettings('swapOnZero', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Rule 7 (Trade Hands)</p>
+                            <p className={styles.settingDescription}>
+                                Playing a 7 lets you trade your hand with another player of your choice.
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.swapOnSeven}
+                                onChange={(e) => handleUpdateSettings('swapOnSeven', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
                 </div>
             </div>
 

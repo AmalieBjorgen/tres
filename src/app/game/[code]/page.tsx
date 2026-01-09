@@ -13,6 +13,7 @@ import { PlayerList } from '@/components/PlayerList';
 import { ColorPicker } from '@/components/ColorPicker';
 import { TresButton } from '@/components/TresButton';
 import { ActionLog } from '@/components/ActionLog';
+import { PlayerPicker } from '@/components/PlayerPicker';
 import { getNextPlayerIndex } from '@/lib/game';
 import styles from './page.module.css';
 
@@ -32,6 +33,7 @@ export default function GamePage() {
     const [showHistory, setShowHistory] = useState(false);
     const [currentEffect, setCurrentEffect] = useState<string | null>(null);
     const [isShaking, setIsShaking] = useState(false);
+    const [showPlayerPicker, setShowPlayerPicker] = useState(false);
     const timeoutTriggeredRef = useRef<number | null>(null);
     const prevIsMyTurnRef = useRef(false);
 
@@ -177,11 +179,24 @@ export default function GamePage() {
             return;
         }
 
+        // If it's a 7 and trade is active, show player picker
+        if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7) {
+            setShowPlayerPicker(true);
+            return;
+        }
+
         // Play the cards
         await executePlayCards(selectedCardIds);
     };
 
-    const executePlayCards = async (cardIds: string[], chosenColor?: CardColor) => {
+    const handlePlayerSelected = async (targetId: string) => {
+        setShowPlayerPicker(false);
+        if (selectedCardIds.length > 0) {
+            executePlayCards(selectedCardIds, undefined, targetId);
+        }
+    };
+
+    const executePlayCards = async (cardIds: string[], chosenColor?: CardColor, swapTargetId?: string) => {
         if (!playerId) return;
 
         try {
@@ -194,6 +209,7 @@ export default function GamePage() {
                     playerId,
                     cardIds,
                     chosenColor,
+                    swapTargetId,
                 }),
             });
 
@@ -383,7 +399,8 @@ export default function GamePage() {
     const myPlayer = game.players.find((p) => p.id === playerId);
     const winner = game.winnerId ? game.players.find((p) => p.id === game.winnerId) : null;
 
-    const canSayTres = myPlayer?.cardCount === 1 && !myPlayer?.hasSaidTres;
+    const targetCount = game.settings.tresRuleset ? 3 : 1;
+    const canSayTres = myPlayer?.cardCount === targetCount && !myPlayer?.hasSaidTres;
     const hasSaidTres = myPlayer?.hasSaidTres ?? false;
 
     const nextPlayerIndex = game ? getNextPlayerIndex(game as any) : -1;
@@ -462,7 +479,11 @@ export default function GamePage() {
                     <aside className={`${styles.gameSidebar} ${showHistory ? styles.sidebarOpen : ''}`}>
                         <div className={styles.sidebarOverlay} onClick={() => setShowHistory(false)} />
                         <div className={styles.sidebarContent}>
-                            <ActionLog history={game.actionHistory || []} players={game.players} />
+                            <ActionLog
+                                history={game.actionHistory || []}
+                                players={game.players}
+                                settings={game.settings}
+                            />
                         </div>
                     </aside>
                 </div>
@@ -487,6 +508,15 @@ export default function GamePage() {
 
             {showColorPicker && (
                 <ColorPicker onSelect={handleColorSelected} />
+            )}
+
+            {showPlayerPicker && (
+                <PlayerPicker
+                    players={game.players}
+                    myId={playerId}
+                    onSelect={handlePlayerSelected}
+                    onCancel={() => setShowPlayerPicker(false)}
+                />
             )}
 
             {actionMessage && (

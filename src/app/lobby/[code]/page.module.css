@@ -179,6 +179,100 @@
     color: var(--text-muted);
 }
 
+/* Settings */
+.settingsSection {
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+}
+
+.settingsSectionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-primary-light);
+}
+
+.settingsList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.settingItem {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.settingToggle {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background-color: var(--bg-tertiary);
+    border-radius: 12px;
+    transition: .4s;
+    border: 1px solid var(--border-color);
+}
+
+.switch:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+}
+
+input:checked+.switch {
+    background-color: var(--color-primary);
+}
+
+input:checked+.switch:before {
+    transform: translateX(20px);
+}
+
+.settingInfo {
+    flex: 1;
+}
+
+.settingName {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 2px;
+}
+
+.settingDescription {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.hiddenInput {
+    display: none;
+}
+
 /* Actions */
 .actions {
     display: flex;

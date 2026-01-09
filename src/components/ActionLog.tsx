@@ -6,9 +6,10 @@ import styles from './ActionLog.module.css';
 interface ActionLogProps {
     history: GameAction[];
     players: ClientPlayer[];
+    settings?: import('@/lib/types').GameSettings;
 }
 
-export function ActionLog({ history, players }: ActionLogProps) {
+export function ActionLog({ history, players, settings }: ActionLogProps) {
     const getPlayerName = (id: string) => {
         const player = players.find(p => p.id === id);
         return player ? player.name : 'Unknown';
@@ -29,6 +30,7 @@ export function ActionLog({ history, players }: ActionLogProps) {
                     <span>
                         <strong>{playerName}</strong> played {count > 1 ? `${count} cards` : 'a card'}
                         {action.chosenColor && <span> (changed to <span className={styles[`color${action.chosenColor}`]}>{action.chosenColor}</span>)</span>}
+                        {action.swapTargetId && <span> (traded with <strong>{getPlayerName(action.swapTargetId)}</strong>)</span>}
                     </span>
                 );
             case 'draw_card':

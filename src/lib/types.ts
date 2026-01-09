@@ -8,6 +8,13 @@ export type CardColor = 'red' | 'blue' | 'green' | 'yellow';
 // Card types
 export type CardType = 'number' | 'skip' | 'reverse' | 'draw_two' | 'wild' | 'wild_draw_four';
 
+// Game settings
+export interface GameSettings {
+    tresRuleset: boolean; // Finish with 3+ cards, call TRES at 3 cards
+    swapOnZero: boolean;  // Play 0 to swap all hands
+    swapOnSeven: boolean; // Play 7 to trade hand with someone
+}
+
 // Card interface
 export interface Card {
     id: string;
@@ -52,6 +59,7 @@ export interface GameState {
     podium: string[]; // Ordered list of player IDs who finished
     actionHistory: GameAction[]; // List of historical actions
     cardsDrawnThisTurn: number; // For "draw up to 3" rule
+    settings: GameSettings;
 }
 
 // Lobby (waiting room before game starts)
@@ -61,6 +69,7 @@ export interface Lobby {
     players: LobbyPlayer[];
     createdAt: number;
     maxPlayers: number;
+    settings: GameSettings;
 }
 
 export interface LobbyPlayer {
@@ -88,6 +97,7 @@ export interface GameAction {
     chosenColor?: CardColor;
     cardCount?: number;
     timestamp: number;
+    swapTargetId?: string; // For Rule 7 (Trade Hands)
 }
 
 // API Request/Response types
@@ -162,6 +172,7 @@ export interface ClientGameState {
     podium: string[];
     actionHistory: GameAction[];
     cardsDrawnThisTurn: number;
+    settings: GameSettings;
 }
 
 export interface ClientPlayer {
