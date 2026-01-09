@@ -110,6 +110,15 @@ export default function GamePage() {
                 setIsShaking(true);
                 setTimeout(() => setIsShaking(false), 500);
             }
+
+            // Rule 0/7 effects
+            if (game.settings.swapOnZero && game.topCard.type === 'number' && game.topCard.value === 0) {
+                setCurrentEffect('HAND SWAP!');
+                setTimeout(() => setCurrentEffect(null), 2000);
+            } else if (game.settings.swapOnSeven && game.topCard.type === 'number' && game.topCard.value === 7 && action.swapTargetId) {
+                setCurrentEffect('TRADE!');
+                setTimeout(() => setCurrentEffect(null), 2000);
+            }
         } else if (action.type === 'draw_card' && (action.cardCount || 0) > 1) {
             setIsShaking(true);
             setTimeout(() => setIsShaking(false), 500);

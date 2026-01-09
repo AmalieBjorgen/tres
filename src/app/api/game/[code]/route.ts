@@ -67,7 +67,7 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { action, playerId, cardId, cardIds, chosenColor, targetId } = body;
+        const { action, playerId, cardId, cardIds, chosenColor, targetId, swapTargetId } = body;
 
         const game = await gameStore.getGame(code);
 
@@ -105,7 +105,7 @@ export async function POST(
         switch (action) {
             case 'play_card':
                 const ids = cardIds || (cardId ? [cardId] : []);
-                result = playCards(currentGame, playerId, ids, chosenColor as CardColor);
+                result = playCards(currentGame, playerId, ids, chosenColor as CardColor, swapTargetId);
                 break;
 
             case 'draw_card':
