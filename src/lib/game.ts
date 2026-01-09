@@ -339,8 +339,12 @@ function validatePlay(
         if (swapTargetId === playerId) {
             return { success: false, error: 'Cannot swap hands with yourself' };
         }
-        if (!game.players.find(p => p.id === swapTargetId)) {
+        const target = game.players.find(p => p.id === swapTargetId);
+        if (!target) {
             return { success: false, error: 'Target player not found' };
+        }
+        if (target.rank) {
+            return { success: false, error: 'Cannot trade with a player who has already finished' };
         }
     }
 
@@ -412,28 +416,41 @@ export function playCards(
     // Handle Rule 0 (Swap All)
     let finalPlayers = [...updatedPlayers];
     let wasSwapAll = false;
-    if (game.settings.swapOnZero && firstCard.type === 'number' && firstCard.value === 0) {
-        wasSwapAll = true;
-        const hands = finalPlayers.map(p => p.hand);
-        const playerCount = finalPlayers.length;
-        const step = game.direction === 'clockwise' ? 1 : -1;
+    const isWinning = playerHand.length === 0;
 
-        finalPlayers = finalPlayers.map((p, index) => ({
-            ...p,
-            hand: hands[(index - step + playerCount) % playerCount]
-        }));
+    if (!isWinning && game.settings.swapOnZero && firstCard.type === 'number' && firstCard.value === 0) {
+        // Only rotate among ACTIVE players
+        const activeIndices = finalPlayers
+            .map((p, i) => (!p.rank ? i : -1))
+            .filter(i => i !== -1);
+
+        if (activeIndices.length > 1) {
+            wasSwapAll = true;
+            const activeHands = activeIndices.map(i => finalPlayers[i].hand);
+            const step = game.direction === 'clockwise' ? 1 : -1;
+
+            activeIndices.forEach((targetIdx, i) => {
+                const sourceIdxInActive = (i - step + activeIndices.length) % activeIndices.length;
+                finalPlayers[targetIdx] = {
+                    ...finalPlayers[targetIdx],
+                    hand: activeHands[sourceIdxInActive]
+                };
+            });
+        }
     }
 
     // Handle Rule 7 (Trade Hands)
-    if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7 && swapTargetId) {
+    if (!isWinning && game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7 && swapTargetId) {
         const pIdx = finalPlayers.findIndex(p => p.id === playerId);
         const tIdx = finalPlayers.findIndex(p => p.id === swapTargetId);
 
-        const pHand = [...finalPlayers[pIdx].hand];
-        const tHand = [...finalPlayers[tIdx].hand];
+        if (pIdx !== -1 && tIdx !== -1 && !finalPlayers[tIdx].rank) {
+            const pHand = [...finalPlayers[pIdx].hand];
+            const tHand = [...finalPlayers[tIdx].hand];
 
-        finalPlayers[pIdx] = { ...finalPlayers[pIdx], hand: tHand };
-        finalPlayers[tIdx] = { ...finalPlayers[tIdx], hand: pHand };
+            finalPlayers[pIdx] = { ...finalPlayers[pIdx], hand: tHand };
+            finalPlayers[tIdx] = { ...finalPlayers[tIdx], hand: pHand };
+        }
     }
 
     // Apply card effects
