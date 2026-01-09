@@ -145,11 +145,11 @@ export function Hand({
     const getOverlap = () => {
         const count = finalCards.length;
         if (count <= 1) return 0;
-        if (count <= 6) return -20;
-        if (count <= 10) return -35;
-        if (count <= 15) return -45;
-        if (count <= 20) return -55;
-        return -60;
+        if (count <= 8) return -15;
+        if (count <= 12) return -25;
+        if (count <= 16) return -35;
+        if (count <= 24) return -45;
+        return -50;
     };
 
     return (
@@ -192,7 +192,10 @@ export function Hand({
                         }
 
                         return (
-                            <div key={card.id} className={styles.handCard}>
+                            <div
+                                key={card.id}
+                                className={`${styles.handCard} ${isSelected ? styles.selected : ''}`}
+                            >
                                 <Card
                                     card={card}
                                     playable={isPlayable}

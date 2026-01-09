@@ -6,8 +6,7 @@
     /* Closer on PC */
     width: 100%;
     padding: 0 var(--spacing-md);
-    max-width: 900px;
-    /* Constrain width to keep buttons closer to cards on wide screens */
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -41,9 +40,33 @@
 }
 
 .handCard:hover {
-    z-index: 20;
-    transform: translateY(-20px) rotate(2deg) scale(1.1);
-    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+    z-index: 50;
+    transform: translateY(-30px) scale(1.2) !important;
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+}
+
+.handCard.selected {
+    transform: translateY(-16px);
+    z-index: 10;
+}
+
+.handCard.selected:hover {
+    transform: translateY(-40px) scale(1.2) !important;
+}
+
+/* Spread effect: hover a card and subsequent cards move away */
+.handCards:hover .handCard {
+    transform: translateX(-15px);
+}
+
+.handCard:hover~.handCard {
+    transform: translateX(35px);
+}
+
+/* Reset internal card transforms to avoid conflicts in the hand */
+.handCard [class*="card"]:hover,
+.handCard [class*="cardSelected"] {
+    transform: none !important;
 }
 
 /* Action Buttons Flanking Hand */
