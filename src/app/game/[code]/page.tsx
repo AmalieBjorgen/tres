@@ -72,23 +72,23 @@ export default function GamePage() {
         // Subscribe to game updates
         const unsubscribe = subscribeToGame(code, (event, data) => {
             if (event === 'game-updated') {
-                // Refetch game state
                 fetchGame(storedPlayerId);
             }
         });
 
-        // Poll as fallback
+        return () => unsubscribe();
+    }, [code, router, fetchGame]);
+
+    // Polling fallback - stops when game is finished
+    useEffect(() => {
+        if (!playerId || game?.status === 'finished') return;
+
         const pollInterval = setInterval(() => {
-            if (storedPlayerId) {
-                fetchGame(storedPlayerId);
-            }
+            fetchGame(playerId);
         }, 2000);
 
-        return () => {
-            unsubscribe();
-            clearInterval(pollInterval);
-        };
-    }, [code, router, fetchGame]);
+        return () => clearInterval(pollInterval);
+    }, [playerId, game?.status, fetchGame]);
 
     // Action effects handler
     useEffect(() => {
