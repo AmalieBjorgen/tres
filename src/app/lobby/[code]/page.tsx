@@ -45,14 +45,15 @@ export default function LobbyPage() {
 
     const fetchLobby = useCallback(async () => {
         try {
-            // First check if game has started
-            const gameStarted = await checkGameStarted();
-            if (gameStarted) return;
-
             const response = await fetch(`/api/lobby?code=${code}`);
             const data = await response.json();
 
             if (!response.ok) {
+                // If lobby is not found, it might have transitioned to a game
+                if (response.status === 404) {
+                    const gameStarted = await checkGameStarted();
+                    if (gameStarted) return;
+                }
                 throw new Error(data.error || 'Lobby not found');
             }
 
