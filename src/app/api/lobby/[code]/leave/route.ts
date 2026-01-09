@@ -11,15 +11,18 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { playerId } = body;
+        const { playerId, playerToken } = body;
 
         const lobby = await gameStore.getLobby(code);
 
         if (!lobby) {
-            return NextResponse.json(
-                { error: 'Lobby not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Lobby not found' }, { status: 404 });
+        }
+
+        // Validate player token
+        const player = lobby.players.find(p => p.id === playerId);
+        if (!player || player.token !== playerToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
         const updatedLobby = leaveLobby(lobby, playerId);
@@ -31,15 +34,24 @@ export async function POST(
 
         await gameStore.setLobby(updatedLobby);
 
+        // Redact tokens for broadcast and response
+        const publicLobby = {
+            ...updatedLobby,
+            players: updatedLobby.players.map(p => {
+                const { token, ...rest } = p;
+                return rest;
+            })
+        };
+
         // Broadcast player left event
         await broadcastToLobby(code, 'player-left', {
             playerId,
-            lobby: updatedLobby,
+            lobby: publicLobby,
         });
 
         return NextResponse.json({
             success: true,
-            lobby: updatedLobby,
+            lobby: publicLobby,
         });
     } catch (error) {
         console.error('Error leaving lobby:', error);

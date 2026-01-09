@@ -12,10 +12,11 @@ export async function GET(
     try {
         const { code } = await params;
         const playerId = request.nextUrl.searchParams.get('playerId');
+        const playerToken = request.headers.get('x-player-token');
 
-        if (!playerId) {
+        if (!playerId || !playerToken) {
             return NextResponse.json(
-                { error: 'Player ID is required' },
+                { error: 'Player ID and Token are required' },
                 { status: 400 }
             );
         }
@@ -26,6 +27,15 @@ export async function GET(
             return NextResponse.json(
                 { error: 'Game not found' },
                 { status: 404 }
+            );
+        }
+
+        // Validate player token
+        const player = game.players.find(p => p.id === playerId);
+        if (!player || player.token !== playerToken) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 403 }
             );
         }
 
@@ -67,7 +77,14 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { action, playerId, cardId, cardIds, chosenColor, targetId, swapTargetId } = body;
+        const { action, playerId, playerToken, cardId, cardIds, chosenColor, targetId, swapTargetId } = body;
+
+        if (!playerId || !playerToken) {
+            return NextResponse.json(
+                { error: 'Player ID and Token are required' },
+                { status: 400 }
+            );
+        }
 
         const game = await gameStore.getGame(code);
 
@@ -82,6 +99,15 @@ export async function POST(
             return NextResponse.json(
                 { error: 'Game is not active' },
                 { status: 400 }
+            );
+        }
+
+        // Validate player token
+        const player = game.players.find(p => p.id === playerId);
+        if (!player || player.token !== playerToken) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 403 }
             );
         }
 

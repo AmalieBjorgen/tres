@@ -14,6 +14,7 @@ export default function LobbyPage() {
 
     const [lobby, setLobby] = useState<Lobby | null>(null);
     const [playerId, setPlayerId] = useState<string | null>(null);
+    const [playerToken, setPlayerToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
@@ -23,9 +24,14 @@ export default function LobbyPage() {
         try {
             // Check if game exists (means it has started)
             const storedPlayerId = sessionStorage.getItem('playerId');
-            if (!storedPlayerId) return false;
+            const storedPlayerToken = sessionStorage.getItem('playerToken');
+            if (!storedPlayerId || !storedPlayerToken) return false;
 
-            const response = await fetch(`/api/game/${code}?playerId=${storedPlayerId}`);
+            const response = await fetch(`/api/game/${code}?playerId=${storedPlayerId}`, {
+                headers: {
+                    'x-player-token': storedPlayerToken
+                }
+            });
             if (response.ok) {
                 // Game exists, redirect to it
                 router.push(`/game/${code}`);
@@ -61,11 +67,13 @@ export default function LobbyPage() {
     useEffect(() => {
         // Get player ID from session
         const storedPlayerId = sessionStorage.getItem('playerId');
-        if (!storedPlayerId) {
+        const storedPlayerToken = sessionStorage.getItem('playerToken');
+        if (!storedPlayerId || !storedPlayerToken) {
             router.push('/');
             return;
         }
         setPlayerId(storedPlayerId);
+        setPlayerToken(storedPlayerToken);
 
         // Fetch initial lobby state
         fetchLobby();
@@ -109,6 +117,7 @@ export default function LobbyPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     playerId,
+                    playerToken,
                     settings: newSettings,
                 }),
             });
@@ -149,7 +158,7 @@ export default function LobbyPage() {
             await fetch(`/api/lobby/${code}/leave`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerId }),
+                body: JSON.stringify({ playerId, playerToken }),
             });
             router.push('/');
         } catch (err) {
@@ -158,7 +167,7 @@ export default function LobbyPage() {
     };
 
     const handleStartGame = async () => {
-        if (!lobby || !playerId) return;
+        if (!lobby || !playerId || !playerToken) return;
 
         setIsStarting(true);
         setError('');
@@ -167,7 +176,7 @@ export default function LobbyPage() {
             const response = await fetch(`/api/lobby/${code}/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerId }),
+                body: JSON.stringify({ playerId, playerToken }),
             });
 
             const data = await response.json();
@@ -383,7 +392,7 @@ export default function LobbyPage() {
                                 className={styles.hiddenInput}
                                 checked={lobby.settings.forcedMatch}
                                 onChange={(e) => handleUpdateSettings('forcedMatch', e.target.checked)}
-                                disabled={!isHost}
+                                disabled={!isHost || isStarting}
                             />
                             <span className={styles.switch}></span>
                         </label>

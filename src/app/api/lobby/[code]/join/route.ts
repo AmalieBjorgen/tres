@@ -50,15 +50,25 @@ export async function POST(
 
         await gameStore.setLobby(result.lobby);
 
-        // Broadcast player joined event
+        // Broadcast player joined event (Redact token)
+        const publicPlayer = { ...result.lobby.players.find((p) => p.id === result.playerId) };
+        delete (publicPlayer as any).token;
+
         await broadcastToLobby(code, 'player-joined', {
-            player: result.lobby.players.find((p) => p.id === result.playerId),
-            lobby: result.lobby,
+            player: publicPlayer,
+            lobby: {
+                ...result.lobby,
+                players: result.lobby.players.map(p => {
+                    const { token, ...rest } = p;
+                    return rest;
+                })
+            },
         });
 
         return NextResponse.json({
             lobby: result.lobby,
             playerId: result.playerId,
+            playerToken: result.playerToken,
         });
     } catch (error) {
         console.error('Error joining lobby:', error);

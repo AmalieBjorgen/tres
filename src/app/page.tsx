@@ -34,8 +34,9 @@ export default function Home() {
         throw new Error(data.error || 'Failed to create lobby');
       }
 
-      // Store player ID in session storage
+      // Store player credentials in session storage
       sessionStorage.setItem('playerId', data.playerId);
+      sessionStorage.setItem('playerToken', data.playerToken);
       sessionStorage.setItem('playerName', playerName.trim());
 
       // Navigate to lobby
@@ -72,8 +73,9 @@ export default function Home() {
         throw new Error(data.error || 'Failed to join lobby');
       }
 
-      // Store player ID in session storage
+      // Store player credentials in session storage
       sessionStorage.setItem('playerId', data.playerId);
+      sessionStorage.setItem('playerToken', data.playerToken);
       sessionStorage.setItem('playerName', playerName.trim());
 
       // Navigate to lobby

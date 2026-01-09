@@ -24,6 +24,7 @@ export default function GamePage() {
 
     const [game, setGame] = useState<ClientGameState | null>(null);
     const [playerId, setPlayerId] = useState<string | null>(null);
+    const [playerToken, setPlayerToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [showColorPicker, setShowColorPicker] = useState(false);
@@ -37,9 +38,13 @@ export default function GamePage() {
     const timeoutTriggeredRef = useRef<number | null>(null);
     const prevIsMyTurnRef = useRef(false);
 
-    const fetchGame = useCallback(async (pid: string) => {
+    const fetchGame = useCallback(async (pid: string, ptoken: string) => {
         try {
-            const response = await fetch(`/api/game/${code}?playerId=${pid}`);
+            const response = await fetch(`/api/game/${code}?playerId=${pid}`, {
+                headers: {
+                    'x-player-token': ptoken
+                }
+            });
             const data = await response.json();
 
             if (!response.ok) {
@@ -61,18 +66,20 @@ export default function GamePage() {
 
     useEffect(() => {
         const storedPlayerId = sessionStorage.getItem('playerId');
-        if (!storedPlayerId) {
+        const storedPlayerToken = sessionStorage.getItem('playerToken');
+        if (!storedPlayerId || !storedPlayerToken) {
             router.push('/');
             return;
         }
         setPlayerId(storedPlayerId);
+        setPlayerToken(storedPlayerToken);
 
-        fetchGame(storedPlayerId);
+        fetchGame(storedPlayerId, storedPlayerToken);
 
         // Subscribe to game updates
         const unsubscribe = subscribeToGame(code, (event, data) => {
             if (event === 'game-updated') {
-                fetchGame(storedPlayerId);
+                fetchGame(storedPlayerId, storedPlayerToken);
             }
         });
 
@@ -81,14 +88,14 @@ export default function GamePage() {
 
     // Polling fallback - stops when game is finished
     useEffect(() => {
-        if (!playerId || game?.status === 'finished') return;
+        if (!playerId || !playerToken || game?.status === 'finished') return;
 
         const pollInterval = setInterval(() => {
-            fetchGame(playerId);
+            fetchGame(playerId, playerToken);
         }, 2000);
 
         return () => clearInterval(pollInterval);
-    }, [playerId, game?.status, fetchGame]);
+    }, [playerId, playerToken, game?.status, fetchGame]);
 
     // Action effects handler
     useEffect(() => {
@@ -216,6 +223,7 @@ export default function GamePage() {
                 body: JSON.stringify({
                     action: 'play_card',
                     playerId,
+                    playerToken,
                     cardIds,
                     chosenColor,
                     swapTargetId,
@@ -257,6 +265,7 @@ export default function GamePage() {
                 body: JSON.stringify({
                     action: 'draw_card',
                     playerId,
+                    playerToken,
                 }),
             });
 
@@ -293,6 +302,7 @@ export default function GamePage() {
                 body: JSON.stringify({
                     action: 'say_tres',
                     playerId,
+                    playerToken,
                 }),
             });
 
@@ -320,6 +330,7 @@ export default function GamePage() {
                 body: JSON.stringify({
                     action: 'challenge_tres',
                     playerId,
+                    playerToken,
                     targetId,
                 }),
             });
@@ -345,7 +356,7 @@ export default function GamePage() {
             await fetch(`/api/game/${code}/leave`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerId }),
+                body: JSON.stringify({ playerId, playerToken }),
             });
             router.push('/');
         } catch (err) {
@@ -367,6 +378,7 @@ export default function GamePage() {
             body: JSON.stringify({
                 action: 'force_timeout',
                 playerId,
+                playerToken,
             }),
         }).then(response => response.json())
             .then(data => {
@@ -378,9 +390,11 @@ export default function GamePage() {
             })
             .catch(() => {
                 // Fallback: just refetch
-                fetchGame(playerId);
+                if (playerId && playerToken) {
+                    fetchGame(playerId, playerToken);
+                }
             });
-    }, [game, playerId, code, fetchGame]);
+    }, [game, playerId, playerToken, code, fetchGame]);
 
     if (isLoading) {
         return (

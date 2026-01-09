@@ -10,21 +10,32 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { settings, playerId } = body as { settings: GameSettings; playerId: string };
+        const { settings, playerId, playerToken } = body as { settings: GameSettings; playerId: string; playerToken: string };
 
         const lobby = await gameStore.getLobby(code);
         if (!lobby) {
             return NextResponse.json({ error: 'Lobby not found' }, { status: 404 });
         }
 
-        if (lobby.hostId !== playerId) {
+        // Validate host token
+        const host = lobby.players.find(p => p.id === lobby.hostId);
+        if (lobby.hostId !== playerId || !host || host.token !== playerToken) {
             return NextResponse.json({ error: 'Only host can change settings' }, { status: 403 });
         }
 
         lobby.settings = settings;
         await gameStore.setLobby(lobby);
 
-        await broadcastToLobby(code, 'lobby-updated', { lobby });
+        // Redact tokens for broadcast
+        const publicLobby = {
+            ...lobby,
+            players: lobby.players.map(p => {
+                const { token, ...rest } = p;
+                return rest;
+            })
+        };
+
+        await broadcastToLobby(code, 'lobby-updated', { lobby: publicLobby });
 
         return NextResponse.json({ success: true, lobby });
     } catch (error) {

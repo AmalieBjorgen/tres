@@ -35,20 +35,27 @@ export function generateLobbyCode(): string {
     return code;
 }
 
-// Generate a player ID
+// Generate a player ID (Public)
 export function generatePlayerId(): string {
-    return 'player_' + Math.random().toString(36).substring(2, 11);
+    return 'p_' + Math.random().toString(36).substring(2, 8);
+}
+
+// Generate a secret token (Secure)
+export function generateToken(): string {
+    return Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
 }
 
 // Create a new lobby
-export function createLobby(hostName: string): { lobby: Lobby; hostId: string } {
+export function createLobby(hostName: string): { lobby: Lobby; hostId: string; hostToken: string } {
     const hostId = generatePlayerId();
+    const hostToken = generateToken();
     const lobby: Lobby = {
         code: generateLobbyCode(),
         hostId,
         players: [
             {
                 id: hostId,
+                token: hostToken,
                 name: hostName,
                 isHost: true,
                 isReady: true,
@@ -59,18 +66,20 @@ export function createLobby(hostName: string): { lobby: Lobby; hostId: string } 
         maxPlayers: 15,
         settings: { ...DEFAULT_SETTINGS },
     };
-    return { lobby, hostId };
+    return { lobby, hostId, hostToken };
 }
 
 // Add a player to a lobby
-export function addPlayerToLobby(lobby: Lobby, playerName: string): { lobby: Lobby; playerId: string } | null {
+export function addPlayerToLobby(lobby: Lobby, playerName: string): { lobby: Lobby; playerId: string; playerToken: string } | null {
     if (lobby.players.length >= lobby.maxPlayers) {
         return null; // Lobby is full
     }
 
     const playerId = generatePlayerId();
+    const playerToken = generateToken();
     const newPlayer: LobbyPlayer = {
         id: playerId,
+        token: playerToken,
         name: playerName,
         isHost: false,
         isReady: false,
@@ -83,6 +92,7 @@ export function addPlayerToLobby(lobby: Lobby, playerName: string): { lobby: Lob
             players: [...lobby.players, newPlayer],
         },
         playerId,
+        playerToken,
     };
 }
 
@@ -102,6 +112,7 @@ export function initializeGame(lobby: Lobby): GameState {
     // Create players from lobby
     const players: Player[] = lobby.players.map((lp) => ({
         id: lp.id,
+        token: lp.token,
         name: lp.name,
         hand: [],
         isHost: lp.isHost,
@@ -747,10 +758,12 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     return {
         id: game.id,
         status: game.status,
+        playerId: player.id,
+        playerToken: player.token,
         players: clientPlayers,
         currentPlayerIndex: game.currentPlayerIndex,
         direction: game.direction,
-        myHand: player?.hand ?? [],
+        myHand: player.hand,
         topCard: getTopCard(game),
         currentColor: game.currentColor,
         drawPileCount: game.drawPile.length,

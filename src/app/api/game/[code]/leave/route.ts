@@ -11,7 +11,7 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { playerId } = body;
+        const { playerId, playerToken } = body;
 
         const game = await gameStore.getGame(code);
 
@@ -22,6 +22,11 @@ export async function POST(
             );
         }
 
+        // Validate player token
+        const player = game.players.find(p => p.id === playerId);
+        if (!player || player.token !== playerToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
         const updatedGame = leaveGame(game, playerId);
 
         if (!updatedGame) {

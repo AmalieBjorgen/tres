@@ -29,6 +29,7 @@ export interface Card {
 // Player interface
 export interface Player {
     id: string;
+    token: string;
     name: string;
     hand: Card[];
     isHost: boolean;
@@ -77,6 +78,7 @@ export interface Lobby {
 
 export interface LobbyPlayer {
     id: string;
+    token: string;
     name: string;
     isHost: boolean;
     isReady: boolean;
@@ -161,6 +163,8 @@ export interface PusherEvent {
 export interface ClientGameState {
     id: string;
     status: GameStatus;
+    playerId: string; // Real public ID of this client
+    playerToken: string; // Secret token of this client
     players: ClientPlayer[];
     currentPlayerIndex: number;
     direction: GameDirection;

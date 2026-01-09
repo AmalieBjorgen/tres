@@ -11,19 +11,17 @@ export async function POST(
     try {
         const { code } = await params;
         const body = await request.json();
-        const { playerId } = body;
+        const { playerId, playerToken } = body;
 
         const lobby = await gameStore.getLobby(code);
 
         if (!lobby) {
-            return NextResponse.json(
-                { error: 'Lobby not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: 'Lobby not found' }, { status: 404 });
         }
 
-        // Verify player is the host
-        if (lobby.hostId !== playerId) {
+        // Verify player is the host and has valid token
+        const host = lobby.players.find(p => p.id === lobby.hostId);
+        if (lobby.hostId !== playerId || !host || host.token !== playerToken) {
             return NextResponse.json(
                 { error: 'Only the host can start the game' },
                 { status: 403 }
