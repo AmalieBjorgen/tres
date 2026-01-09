@@ -49,7 +49,11 @@ export function GameBoard({
 
                 {/* Discard pile */}
                 <div className={styles.discardPile}>
-                    <Card card={topCard} drawing={animateTop} />
+                    <Card
+                        card={topCard}
+                        drawing={animateTop}
+                        colorOverride={topCard.color === null ? currentColor : undefined}
+                    />
                 </div>
 
                 {/* Draw pile */}

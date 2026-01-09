@@ -15,6 +15,7 @@ interface CardProps {
     playing?: boolean;
     onClick?: () => void;
     className?: string;
+    colorOverride?: import('@/lib/types').CardColor;
 }
 
 export function Card({
@@ -28,6 +29,7 @@ export function Card({
     playing = false,
     onClick,
     className = '',
+    colorOverride,
 }: CardProps) {
     if (faceDown || !card) {
         return (
@@ -43,8 +45,9 @@ export function Card({
         );
     }
 
-    const colorClass = card.color
-        ? styles[`card${card.color.charAt(0).toUpperCase()}${card.color.slice(1)}`]
+    const effectiveColor = colorOverride || card.color;
+    const colorClass = effectiveColor
+        ? styles[`card${effectiveColor.charAt(0).toUpperCase()}${effectiveColor.slice(1)}`]
         : styles.cardWild;
 
     const symbol = getCardSymbol(card);
