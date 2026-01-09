@@ -46,9 +46,6 @@ export function GameBoard({
 
             <div className={styles.boardCenter}>
                 {/* Direction indicators */}
-                <span className={`${styles.directionIndicator} ${styles.directionLeft}`}>
-                    {direction === 'counter_clockwise' ? '←' : ''}
-                </span>
 
                 {/* Discard pile */}
                 <div className={styles.discardPile}>
@@ -77,9 +74,14 @@ export function GameBoard({
                     </div>
                 )}
 
-                <span className={`${styles.directionIndicator} ${styles.directionRight}`}>
-                    {direction === 'clockwise' ? '→' : ''}
-                </span>
+                <div className={styles.directionIndicators}>
+                    <div className={`${styles.directionInfo} ${direction === 'clockwise' ? styles.directionActive : ''}`}>
+                        <span>⟳ Clockwise</span>
+                    </div>
+                    <div className={`${styles.directionInfo} ${direction === 'counter_clockwise' ? styles.directionActive : ''}`}>
+                        <span>⟲ Counter-clockwise</span>
+                    </div>
+                </div>
             </div>
         </div>
     );

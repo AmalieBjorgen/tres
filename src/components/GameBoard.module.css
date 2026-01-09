@@ -117,21 +117,45 @@
 }
 
 /* Direction indicator */
-.directionIndicator {
+.directionIndicators {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 2rem;
+    inset: -20px;
+    border-radius: 50%;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 10px;
+}
+
+.directionInfo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     color: var(--text-muted);
-    opacity: 0.5;
+    opacity: 0.3;
+    transition: all 0.3s;
+    display: none;
 }
 
-.directionLeft {
-    left: -40px;
+.directionActive {
+    display: flex;
+    opacity: 1;
+    color: var(--color-primary);
+    animation: directionFade 2s ease-in-out infinite;
 }
 
-.directionRight {
-    right: -40px;
+@keyframes directionFade {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 /* Turn indicator */

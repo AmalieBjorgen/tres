@@ -25,6 +25,8 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    z-index: 120;
+    /* Keep buttons above overlays */
 }
 
 .historyToggle {
@@ -112,15 +114,34 @@
 .gameSidebar {
     width: 300px;
     height: 100%;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    position: relative;
+    z-index: 80;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s, visibility 0.3s;
+    transform: translateX(300px);
+    margin-right: -300px;
+    visibility: hidden;
+}
+
+.sidebarOpen {
+    transform: translateX(0);
+    margin-right: 0;
+    visibility: visible;
 }
 
 .sidebarContent {
+    width: 300px;
     height: 100%;
 }
 
 .sidebarOverlay {
     display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 105;
 }
 
 /* Player's hand at bottom */
@@ -334,5 +355,36 @@
     .handArea {
         padding-top: var(--spacing-sm);
         padding-bottom: 0;
+    }
+
+    .gameSidebar {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        height: 100vh;
+        z-index: 110;
+        background: var(--bg-primary);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        border-left: 1px solid var(--border-color);
+        transform: translateX(100%);
+        margin-right: 0;
+        visibility: hidden;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+    }
+
+    .sidebarOpen {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .sidebarOpen .sidebarOverlay {
+        display: block;
+    }
+
+    .sidebarContent {
+        width: 100%;
     }
 }

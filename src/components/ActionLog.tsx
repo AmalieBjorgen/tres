@@ -67,7 +67,7 @@ export function ActionLog({ history, players }: ActionLogProps) {
                 {history.length === 0 ? (
                     <div className={styles.empty}>No actions recorded yet.</div>
                 ) : (
-                    history.map((action, index) => (
+                    [...history].reverse().map((action, index) => (
                         <div key={`${action.timestamp}-${index}`} className={styles.item}>
                             <span className={styles.time}>{formatTimestamp(action.timestamp)}</span>
                             <span className={styles.message}>{renderActionMessage(action)}</span>
