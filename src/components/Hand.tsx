@@ -140,14 +140,23 @@ export function Hand({
     }
 
     const finalCards = displayCards;
-    const handClass = finalCards.length > 10
-        ? styles.handManyCards
-        : finalCards.length > 7
-            ? styles.handFanned
-            : '';
+
+    // Dynamic overlap calculation for CSS variable
+    const getOverlap = () => {
+        const count = finalCards.length;
+        if (count <= 1) return 0;
+        if (count <= 6) return -20;
+        if (count <= 10) return -35;
+        if (count <= 15) return -45;
+        if (count <= 20) return -55;
+        return -60;
+    };
 
     return (
-        <div className={styles.handContainer}>
+        <div
+            className={styles.handContainer}
+            style={{ '--card-overlap': `${getOverlap()}px` } as React.CSSProperties}
+        >
             {isMyTurn && (
                 <button
                     className={`${styles.actionButton} ${styles.drawButton}`}
@@ -162,7 +171,7 @@ export function Hand({
             )}
 
             <div className={styles.hand}>
-                <div className={`${styles.handCards} ${handClass}`}>
+                <div className={styles.handCards}>
                     {finalCards.map((card) => {
                         const isSelected = selectedCardIds.includes(card.id);
                         const isNew = newCardIds.has(card.id);

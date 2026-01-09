@@ -13,6 +13,9 @@ export interface GameSettings {
     tresRuleset: boolean; // Finish with 3+ cards, call TRES at 3 cards
     swapOnZero: boolean;  // Play 0 to swap all hands
     swapOnSeven: boolean; // Play 7 to trade hand with someone
+    jumpInRule: boolean;  // Play out of turn with exact match
+    drawUntilPlay: boolean; // Keep drawing until playable card found
+    forcedMatch: boolean; // Must play if you have a playable card
 }
 
 // Card interface
@@ -99,6 +102,7 @@ export interface GameAction {
     timestamp: number;
     swapTargetId?: string; // For Rule 7 (Trade Hands)
     wasSwapAll?: boolean; // For Rule 0 (Swap Hands)
+    wasJumpIn?: boolean; // For Jump-in rule
 }
 
 // API Request/Response types

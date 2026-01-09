@@ -33,7 +33,7 @@
 
 .handCard {
     transition: all var(--transition-fast);
-    margin-left: -25px;
+    margin-left: var(--card-overlap, -25px);
 }
 
 .handCard:first-child {

@@ -20,6 +20,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     tresRuleset: false,
     swapOnZero: false,
     swapOnSeven: false,
+    jumpInRule: false,
+    drawUntilPlay: false,
+    forcedMatch: false,
 };
 
 // Generate a random lobby code (6 characters)
@@ -236,6 +239,114 @@ export function drawCards(game: GameState, count: number): { cards: Card[]; game
     };
 }
 
+// Check if a player has any playable cards
+export function hasPlayableCard(game: GameState, playerId: string): boolean {
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return false;
+
+    const topCard = getTopCard(game);
+    return player.hand.some(card => {
+        // Normal move validation matches logic in playCards/validatePlay
+        if (game.currentDrawStack > 0) {
+            if (topCard.type === 'draw_two') return card.type === 'draw_two';
+            if (topCard.type === 'wild_draw_four') return card.type === 'wild_draw_four';
+            return false;
+        }
+        return canPlayCard(card, topCard, game.currentColor);
+    });
+}
+
+// Helper to validate a play attempt
+function validatePlay(
+    game: GameState,
+    playerId: string,
+    cardsToPlay: Card[],
+    chosenColor?: CardColor,
+    swapTargetId?: string
+): { success: boolean; error?: string } {
+    if (cardsToPlay.length === 0) return { success: false, error: 'No cards selected' };
+
+    const firstCard = cardsToPlay[0];
+    const topCard = getTopCard(game);
+    const currentPlayer = getCurrentPlayer(game);
+    const isMyTurn = currentPlayer.id === playerId;
+
+    // 1. Check Turn (Jump-in allowed)
+    if (!isMyTurn) {
+        if (!game.settings.jumpInRule) return { success: false, error: 'Not your turn' };
+
+        // Jump-in: Exact match (color AND value/type)
+        // Note: Wilds can't usually jump-in because they don't have a color in hand
+        const topColor = topCard.color || game.currentColor;
+        const isExactMatch =
+            firstCard.type === topCard.type &&
+            firstCard.color === topColor &&
+            (firstCard.type !== 'number' || firstCard.value === topCard.value);
+
+        if (!isExactMatch || cardsToPlay.length > 1) {
+            return { success: false, error: 'Jump-in requires single exact match' };
+        }
+    }
+
+    // 2. Handle Stacking Logic
+    if (game.currentDrawStack > 0) {
+        if (topCard.type === 'draw_two') {
+            if (firstCard.type !== 'draw_two' || cardsToPlay.length > 1) {
+                return { success: false, error: 'Must play a single +2 to stack' };
+            }
+        } else if (topCard.type === 'wild_draw_four') {
+            if (firstCard.type !== 'wild_draw_four' || cardsToPlay.length > 1) {
+                return { success: false, error: 'Must play a single +4 to stack' };
+            }
+        }
+    }
+
+    // 3. Handle Multi-Card Play Logic
+    if (cardsToPlay.length > 1) {
+        if (!cardsToPlay.every(c => c.type === 'number' && c.value === firstCard.value)) {
+            return { success: false, error: 'Can only play multiple cards of the same number' };
+        }
+    }
+
+    // 4. Validate first card is playable normally (if not stacking)
+    if (game.currentDrawStack === 0 && isMyTurn) { // normal match check
+        if (!canPlayCard(firstCard, topCard, game.currentColor)) {
+            return { success: false, error: 'First card is not playable' };
+        }
+    }
+
+    // For wild cards, require a color choice
+    if (isWildCard(firstCard) && !chosenColor) {
+        return { success: false, error: 'Must choose a color for wild card' };
+    }
+
+    // 5. Tres Ruleset Finish Validation
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return { success: false, error: 'Player not found' };
+
+    const cardPoolLength = player.hand.length - cardsToPlay.length;
+    if (game.settings.tresRuleset && cardPoolLength === 0) {
+        if (cardsToPlay.length < 3) {
+            return { success: false, error: 'Tres ruleset: Must play at least 3 cards to win' };
+        }
+    }
+
+    // 6. Rule 7 Validation
+    if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7) {
+        if (!swapTargetId) {
+            return { success: false, error: 'Must select a player to swap hands with' };
+        }
+        if (swapTargetId === playerId) {
+            return { success: false, error: 'Cannot swap hands with yourself' };
+        }
+        if (!game.players.find(p => p.id === swapTargetId)) {
+            return { success: false, error: 'Target player not found' };
+        }
+    }
+
+    return { success: true };
+}
+
 // Play one or more cards
 export function playCards(
     game: GameState,
@@ -244,94 +355,41 @@ export function playCards(
     chosenColor?: CardColor,
     swapTargetId?: string
 ): { success: boolean; game: GameState; error?: string } {
-    if (cardIds.length === 0) {
-        return { success: false, game, error: 'No cards selected' };
-    }
-
-    // Validate it's the player's turn
-    const currentPlayer = getCurrentPlayer(game);
-    if (currentPlayer.id !== playerId) {
-        return { success: false, game, error: 'Not your turn' };
-    }
-
     // Find all cards in player's hand
+    const player = game.players.find(p => p.id === playerId);
+    if (!player) return { success: false, game, error: 'Player not found' };
+
     const cardsToPlay: Card[] = [];
-    const cardPool = [...currentPlayer.hand];
+    const playerHand = [...player.hand];
 
     for (const cardId of cardIds) {
-        const index = cardPool.findIndex(c => c.id === cardId);
+        const index = playerHand.findIndex(c => c.id === cardId);
         if (index === -1) {
             return { success: false, game, error: 'Card not in hand' };
         }
-        cardsToPlay.push(cardPool[index]);
-        cardPool.splice(index, 1);
+        cardsToPlay.push(playerHand[index]);
+        playerHand.splice(index, 1);
+    }
+
+    // Validate play
+    const validation = validatePlay(game, playerId, cardsToPlay, chosenColor, swapTargetId);
+    if (!validation.success) {
+        return { success: false, game, error: validation.error };
     }
 
     const firstCard = cardsToPlay[0];
     const topCard = getTopCard(game);
-
-    // 1. Handle Stacking Logic
-    if (game.currentDrawStack > 0) {
-        // Must stack either +2 on +2 or +4 on +4
-        if (topCard.type === 'draw_two') {
-            if (firstCard.type !== 'draw_two' || cardsToPlay.length > 1) {
-                return { success: false, game, error: 'Must play a single +2 to stack' };
-            }
-        } else if (topCard.type === 'wild_draw_four') {
-            if (firstCard.type !== 'wild_draw_four' || cardsToPlay.length > 1) {
-                return { success: false, game, error: 'Must play a single +4 to stack' };
-            }
-        }
-    }
-
-    // 2. Handle Multi-Card Play Logic
-    if (cardsToPlay.length > 1) {
-        // Can only multi-play numeric cards of same value
-        if (!cardsToPlay.every(c => c.type === 'number' && c.value === firstCard.value)) {
-            return { success: false, game, error: 'Can only play multiple cards of the same number' };
-        }
-    }
-
-    // 3. Validate first card is playable normally (if not stacking)
-    if (game.currentDrawStack === 0) {
-        if (!canPlayCard(firstCard, topCard, game.currentColor)) {
-            return { success: false, game, error: 'First card is not playable' };
-        }
-    }
-
-    // For wild cards, require a color choice
-    if (isWildCard(firstCard) && !chosenColor) {
-        return { success: false, game, error: 'Must choose a color for wild card' };
-    }
-
-    // 4. Tres Ruleset Finish Validation
-    if (game.settings.tresRuleset && cardPool.length === 0) {
-        if (cardsToPlay.length < 3) {
-            return { success: false, game, error: 'Tres ruleset: Must play at least 3 cards to win' };
-        }
-    }
-
-    // 5. Rule 7 Validation
-    if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7) {
-        if (!swapTargetId) {
-            return { success: false, game, error: 'Must select a player to swap hands with' };
-        }
-        if (swapTargetId === playerId) {
-            return { success: false, game, error: 'Cannot swap hands with yourself' };
-        }
-        if (!game.players.find(p => p.id === swapTargetId)) {
-            return { success: false, game, error: 'Target player not found' };
-        }
-    }
+    const playerIndex = game.players.findIndex(p => p.id === playerId);
+    const isJumpIn = game.currentPlayerIndex !== playerIndex;
 
     // Remove cards from player's hand and handle Tres grace period
     const updatedPlayers = game.players.map((p) => {
         if (p.id === playerId) {
             const targetCount = game.settings.tresRuleset ? 3 : 1;
-            const hasTargetCount = cardPool.length === targetCount;
+            const hasTargetCount = playerHand.length === targetCount;
             return {
                 ...p,
-                hand: cardPool,
+                hand: playerHand,
                 hasSaidTres: false,
                 tresGraceExpiresAt: hasTargetCount ? Date.now() + TRES_GRACE_PERIOD_MS : null
             };
@@ -339,10 +397,8 @@ export function playCards(
         return p;
     });
 
-    // Add cards to discard pile (in order played)
+    // Add cards to discard pile
     const newDiscardPile = [...game.discardPile, ...cardsToPlay];
-
-    // Determine new color from the LAST card played
     const lastCard = cardsToPlay[cardsToPlay.length - 1];
     const newColor = isWildCard(lastCard) ? chosenColor! : lastCard.color!;
 
@@ -362,25 +418,22 @@ export function playCards(
         const playerCount = finalPlayers.length;
         const step = game.direction === 'clockwise' ? 1 : -1;
 
-        finalPlayers = finalPlayers.map((player, index) => {
-            const sourceIndex = (index - step + playerCount) % playerCount;
-            return {
-                ...player,
-                hand: hands[sourceIndex]
-            };
-        });
+        finalPlayers = finalPlayers.map((p, index) => ({
+            ...p,
+            hand: hands[(index - step + playerCount) % playerCount]
+        }));
     }
 
     // Handle Rule 7 (Trade Hands)
     if (game.settings.swapOnSeven && firstCard.type === 'number' && firstCard.value === 7 && swapTargetId) {
-        const playerIndex = finalPlayers.findIndex(p => p.id === playerId);
-        const targetIndex = finalPlayers.findIndex(p => p.id === swapTargetId);
+        const pIdx = finalPlayers.findIndex(p => p.id === playerId);
+        const tIdx = finalPlayers.findIndex(p => p.id === swapTargetId);
 
-        const playerHand = [...finalPlayers[playerIndex].hand];
-        const targetHand = [...finalPlayers[targetIndex].hand];
+        const pHand = [...finalPlayers[pIdx].hand];
+        const tHand = [...finalPlayers[tIdx].hand];
 
-        finalPlayers[playerIndex] = { ...finalPlayers[playerIndex], hand: targetHand };
-        finalPlayers[targetIndex] = { ...finalPlayers[targetIndex], hand: playerHand };
+        finalPlayers[pIdx] = { ...finalPlayers[pIdx], hand: tHand };
+        finalPlayers[tIdx] = { ...finalPlayers[tIdx], hand: pHand };
     }
 
     // Apply card effects
@@ -390,7 +443,8 @@ export function playCards(
         discardPile: newDiscardPile,
         currentColor: newColor,
         currentDrawStack: newDrawStack,
-        cardsDrawnThisTurn: 0, // Reset draw count on play
+        cardsDrawnThisTurn: 0,
+        currentPlayerIndex: isJumpIn ? playerIndex : game.currentPlayerIndex, // update turn to Jump-in player
     };
 
     const action: GameAction = {
@@ -400,31 +454,25 @@ export function playCards(
         chosenColor,
         swapTargetId,
         wasSwapAll,
+        wasJumpIn: isJumpIn,
         timestamp: Date.now(),
     };
 
     newGame = recordAction(newGame, action);
 
-    // Check for win/finish
-    if (cardPool.length === 0) {
+    // Winner check
+    if (playerHand.length === 0) {
         if (!newGame.podium.includes(playerId)) {
             newGame.podium.push(playerId);
             const rank = newGame.podium.length;
-            newGame.players[game.currentPlayerIndex].rank = rank;
+            newGame.players[playerIndex].rank = rank;
             if (rank === 1) newGame.winnerId = playerId;
         }
 
-        // Check if game should end
-        const initialPlayerCount = newGame.players.length;
-        let shouldEnd = false;
-        if (initialPlayerCount <= 2) {
-            shouldEnd = newGame.podium.length >= 1;
-        } else if (initialPlayerCount === 3) {
-            shouldEnd = newGame.podium.length >= 2;
-        } else {
-            // 4 or more players: end when 3 players have finished
-            shouldEnd = newGame.podium.length >= 3;
-        }
+        const shouldEnd =
+            newGame.players.length <= 2 ? newGame.podium.length >= 1 :
+                newGame.players.length === 3 ? newGame.podium.length >= 2 :
+                    newGame.podium.length >= 3;
 
         if (shouldEnd) {
             newGame.status = 'finished';
@@ -432,26 +480,20 @@ export function playCards(
         }
     }
 
-    // Handle special card effects (only of the LAST card played if multiple)
+    // Special effects
     switch (lastCard.type) {
         case 'skip':
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
             break;
-
         case 'reverse':
             newGame.direction = newGame.direction === 'clockwise' ? 'counter_clockwise' : 'clockwise';
-            if (newGame.players.length === 2) {
-                newGame.currentPlayerIndex = getNextPlayerIndex(newGame, 1);
-            } else {
-                newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
-            }
+            newGame.currentPlayerIndex = (newGame.players.length === 2 || isJumpIn) ? getNextPlayerIndex(newGame, 1) : getNextPlayerIndex(newGame);
+            // If jump-in and reverse, it's a bit tricky. Usually jump-in just steals the turn and then play continues.
             break;
-
         case 'draw_two':
         case 'wild_draw_four':
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
             break;
-
         default:
             newGame.currentPlayerIndex = getNextPlayerIndex(newGame);
     }
@@ -509,7 +551,60 @@ export function drawCardAction(
         return { success: true, game: recordAction(newGame, action), drawnCards: accumulatedDrawnCards };
     }
 
-    // 2. Normal draw (draw 1 card, up to 3 times)
+    // 2. Forced Match: Cannot draw if you have a playable card
+    if (game.settings.forcedMatch && hasPlayableCard(game, playerId)) {
+        return { success: false, game, error: 'Forced Match: You must play a card since you have one' };
+    }
+
+    // 3. Draw Until Play
+    if (game.settings.drawUntilPlay) {
+        const drawnCards: Card[] = [];
+        let currentState = game;
+        let foundPlayable = false;
+
+        while (!foundPlayable) {
+            const { cards, game: nextState } = drawCards(currentState, 1);
+            if (cards.length === 0) break; // Deck empty
+
+            const card = cards[0];
+            drawnCards.push(card);
+            currentState = nextState;
+
+            // Update player hand in temporary state for canPlayCard check
+            const tempPlayers = currentState.players.map(p =>
+                p.id === playerId ? { ...p, hand: [...p.hand, card] } : p
+            );
+            const tempState = { ...currentState, players: tempPlayers };
+
+            if (canPlayCard(card, getTopCard(tempState), tempState.currentColor)) {
+                foundPlayable = true;
+            }
+        }
+
+        const updatedPlayers = currentState.players.map((p) =>
+            p.id === playerId ? { ...p, hand: [...p.hand, ...drawnCards], hasSaidTres: false, tresGraceExpiresAt: null } : p
+        );
+
+        const newGame: GameState = {
+            ...currentState,
+            players: updatedPlayers,
+            cardsDrawnThisTurn: 0,
+            // In Draw Until Play, usually drawing ends your turn unless you want to play what you just drew?
+            // Standard Uno rules vary. Lets assume for now it stays your turn so you can play it.
+            turnStartedAt: Date.now(),
+        };
+
+        const action: GameAction = {
+            type: 'draw_card',
+            playerId,
+            cardCount: drawnCards.length,
+            timestamp: Date.now(),
+        };
+
+        return { success: true, game: recordAction(newGame, action), drawnCards };
+    }
+
+    // 4. Normal draw (draw 1 card, up to 3 times)
     if (game.cardsDrawnThisTurn >= 3) {
         return { success: false, game, error: 'Already drawn 3 cards this turn' };
     }
@@ -664,7 +759,10 @@ export function handleTurnTimeout(
     }
 
     const currentPlayer = getCurrentPlayer(game);
-    const penaltyCount = 5 + game.currentDrawStack;
+    const handSize = currentPlayer.hand.length;
+    // Penalty is half the hand size (min 2, max 5) + stack
+    const basePenalty = Math.max(2, Math.min(5, Math.floor(handSize / 2)));
+    const penaltyCount = basePenalty + game.currentDrawStack;
 
     // Draw penalty cards
     const { cards: drawnCards, game: afterDraw } = drawCards(game, penaltyCount);

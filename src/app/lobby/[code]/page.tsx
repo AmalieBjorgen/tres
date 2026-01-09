@@ -331,6 +331,63 @@ export default function LobbyPage() {
                             <span className={styles.switch}></span>
                         </label>
                     </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Jump-in Rule</p>
+                            <p className={styles.settingDescription}>
+                                Play out of turn if you have an exact match (color and value) to the top card.
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.jumpInRule}
+                                onChange={(e) => handleUpdateSettings('jumpInRule', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Draw Until Play</p>
+                            <p className={styles.settingDescription}>
+                                When drawing, you keep drawing until you find a playable card.
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.drawUntilPlay}
+                                onChange={(e) => handleUpdateSettings('drawUntilPlay', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
+
+                    <div className={styles.settingItem}>
+                        <div className={styles.settingInfo}>
+                            <p className={styles.settingName}>Forced Match</p>
+                            <p className={styles.settingDescription}>
+                                If you have a playable card in your hand, you MUST play it (no drawing).
+                            </p>
+                        </div>
+                        <label className={styles.settingToggle}>
+                            <input
+                                type="checkbox"
+                                className={styles.hiddenInput}
+                                checked={lobby.settings.forcedMatch}
+                                onChange={(e) => handleUpdateSettings('forcedMatch', e.target.checked)}
+                                disabled={!isHost}
+                            />
+                            <span className={styles.switch}></span>
+                        </label>
+                    </div>
                 </div>
             </div>
 

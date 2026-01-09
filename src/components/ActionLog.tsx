@@ -32,6 +32,7 @@ export function ActionLog({ history, players, settings }: ActionLogProps) {
                         {action.chosenColor && <span> (changed to <span className={styles[`color${action.chosenColor}`]}>{action.chosenColor}</span>)</span>}
                         {action.swapTargetId && <span> (traded with <strong>{getPlayerName(action.swapTargetId)}</strong>)</span>}
                         {action.wasSwapAll && <span> (all hands swapped)</span>}
+                        {action.wasJumpIn && <span> (jumped in!)</span>}
                     </span>
                 );
             case 'draw_card':
