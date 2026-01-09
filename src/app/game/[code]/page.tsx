@@ -112,10 +112,10 @@ export default function GamePage() {
             }
 
             // Rule 0/7 effects
-            if (game.settings.swapOnZero && game.topCard.type === 'number' && game.topCard.value === 0) {
+            if (action.wasSwapAll) {
                 setCurrentEffect('HAND SWAP!');
                 setTimeout(() => setCurrentEffect(null), 2000);
-            } else if (game.settings.swapOnSeven && game.topCard.type === 'number' && game.topCard.value === 7 && action.swapTargetId) {
+            } else if (action.swapTargetId) {
                 setCurrentEffect('TRADE!');
                 setTimeout(() => setCurrentEffect(null), 2000);
             }

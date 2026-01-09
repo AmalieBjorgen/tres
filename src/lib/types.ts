@@ -98,6 +98,7 @@ export interface GameAction {
     cardCount?: number;
     timestamp: number;
     swapTargetId?: string; // For Rule 7 (Trade Hands)
+    wasSwapAll?: boolean; // For Rule 0 (Swap Hands)
 }
 
 // API Request/Response types

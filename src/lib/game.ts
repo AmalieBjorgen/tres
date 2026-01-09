@@ -355,7 +355,9 @@ export function playCards(
 
     // Handle Rule 0 (Swap All)
     let finalPlayers = [...updatedPlayers];
+    let wasSwapAll = false;
     if (game.settings.swapOnZero && firstCard.type === 'number' && firstCard.value === 0) {
+        wasSwapAll = true;
         const hands = finalPlayers.map(p => p.hand);
         const playerCount = finalPlayers.length;
         const step = game.direction === 'clockwise' ? 1 : -1;
@@ -397,6 +399,7 @@ export function playCards(
         cardIds,
         chosenColor,
         swapTargetId,
+        wasSwapAll,
         timestamp: Date.now(),
     };
 
