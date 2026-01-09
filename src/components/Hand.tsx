@@ -171,7 +171,7 @@ export function Hand({
 
                         if (isMyTurn && selectedCardIds.length > 0) {
                             const firstSelectedId = selectedCardIds[0];
-                            const firstSelectedCard = cards.find(c => c.id === firstId);
+                            const firstSelectedCard = cards.find(c => c.id === firstSelectedId);
                             if (firstSelectedCard?.type === 'number' && card.type === 'number' && firstSelectedCard.value === card.value) {
                                 isPlayable = true;
                             }
