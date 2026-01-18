@@ -176,6 +176,14 @@
     height: 100%;
     overflow: hidden;
     /* Prevent content from stretching the sidebar */
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebarRules {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
 }
 
 .sidebarOverlay {

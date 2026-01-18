@@ -14,6 +14,7 @@ import { ColorPicker } from '@/components/ColorPicker';
 import { TresButton } from '@/components/TresButton';
 import { ActionLog } from '@/components/ActionLog';
 import { PlayerPicker } from '@/components/PlayerPicker';
+import { ActiveRules } from '@/components/ActiveRules';
 import { getNextPlayerIndex } from '@/lib/game';
 import styles from './page.module.css';
 
@@ -457,7 +458,7 @@ export default function GamePage() {
     const winner = game.winnerId ? game.players.find((p) => p.id === game.winnerId) : null;
 
     const targetCount = game.settings.tresRuleset ? 3 : 1;
-    const canSayTres = myPlayer?.cardCount === targetCount && !myPlayer?.hasSaidTres;
+    const canSayTres = myPlayer?.cardCount !== undefined && myPlayer.cardCount <= targetCount && !myPlayer.hasSaidTres;
     const hasSaidTres = myPlayer?.hasSaidTres ?? false;
 
     const nextPlayerIndex = game ? getNextPlayerIndex(game as any) : -1;
@@ -515,6 +516,7 @@ export default function GamePage() {
                                 currentPlayerIndex={game.currentPlayerIndex}
                                 nextPlayerIndex={nextPlayerIndex}
                                 myId={playerId}
+                                settings={game.settings}
                                 onChallenge={handleChallenge}
                             />
                         </div>
@@ -536,6 +538,9 @@ export default function GamePage() {
                     <aside className={`${styles.gameSidebar} ${showHistory ? styles.sidebarOpen : ''}`}>
                         <div className={styles.sidebarOverlay} onClick={() => setShowHistory(false)} />
                         <div className={styles.sidebarContent}>
+                            <div className={styles.sidebarRules}>
+                                <ActiveRules settings={game.settings} />
+                            </div>
                             <ActionLog
                                 history={game.actionHistory || []}
                                 players={game.players}

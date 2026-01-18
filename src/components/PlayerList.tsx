@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ClientPlayer } from '@/lib/types';
+import { ClientPlayer, GameSettings } from '@/lib/types';
 import styles from './PlayerList.module.css';
 
 interface PlayerListProps {
     players: ClientPlayer[];
     currentPlayerIndex: number;
     myId: string;
+    settings: GameSettings;
     nextPlayerIndex?: number;
     onChallenge?: (playerId: string) => void;
 }
@@ -17,6 +18,7 @@ export function PlayerList({
     currentPlayerIndex,
     nextPlayerIndex,
     myId,
+    settings,
     onChallenge,
 }: PlayerListProps) {
     const [now, setNow] = useState(Date.now());
@@ -35,9 +37,10 @@ export function PlayerList({
 
                 const isGraceActive = player.tresGraceExpiresAt && now < player.tresGraceExpiresAt;
 
+                const targetCount = settings.tresRuleset ? 3 : 1;
                 const canChallenge =
                     !isMe &&
-                    player.cardCount === 1 &&
+                    player.cardCount <= targetCount &&
                     !player.hasSaidTres &&
                     !isGraceActive &&
                     onChallenge;
@@ -65,7 +68,7 @@ export function PlayerList({
                             <div className={styles.playerCardCount}>
                                 <span className={styles.playerCardIcon}>🃏</span>
                                 {player.cardCount} card{player.cardCount !== 1 ? 's' : ''}
-                                {player.hasSaidTres && player.cardCount === 1 && (
+                                {player.hasSaidTres && player.cardCount <= targetCount && (
                                     <span className={styles.tresBadge}>TRES!</span>
                                 )}
                                 {player.rank && (

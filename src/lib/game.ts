@@ -190,25 +190,32 @@ function recordAction(game: GameState, action: GameAction): GameState {
 }
 
 /**
- * Update a player's hand and reset their Tres status.
- * Optionally set a grace period for calling TRES.
+ * Update a player's hand and manage their Tres status.
+ * Resets Tres status if they go above the threshold.
+ * Sets a grace period if they enter the threshold.
  */
 function updatePlayerHand(
     players: Player[],
     playerId: string,
     newHand: Card[],
-    gracePeriodMs?: number | null
+    settings: GameSettings
 ): Player[] {
-    return players.map((p) =>
-        p.id === playerId
-            ? {
-                ...p,
-                hand: newHand,
-                hasSaidTres: false,
-                tresGraceExpiresAt: gracePeriodMs ? Date.now() + gracePeriodMs : null,
-            }
-            : p
-    );
+    const threshold = settings.tresRuleset ? 3 : 1;
+    return players.map((p) => {
+        if (p.id !== playerId) return p;
+
+        const enteringDangerZone = p.hand.length > threshold && newHand.length <= threshold;
+        const leavingDangerZone = newHand.length > threshold;
+
+        return {
+            ...p,
+            hand: newHand,
+            hasSaidTres: leavingDangerZone ? false : p.hasSaidTres,
+            tresGraceExpiresAt: enteringDangerZone
+                ? Date.now() + TRES_GRACE_PERIOD_MS
+                : (leavingDangerZone ? null : p.tresGraceExpiresAt),
+        };
+    });
 }
 
 /**
@@ -429,9 +436,7 @@ export function playCards(
     const isJumpIn = game.currentPlayerIndex !== playerIndex;
 
     // Remove cards from player's hand and handle Tres grace period
-    const targetCount = game.settings.tresRuleset ? 3 : 1;
-    const gracePeriod = playerHand.length === targetCount ? TRES_GRACE_PERIOD_MS : null;
-    const updatedPlayers = updatePlayerHand(game.players, playerId, playerHand, gracePeriod);
+    const updatedPlayers = updatePlayerHand(game.players, playerId, playerHand, game.settings);
 
     // Add cards to discard pile
     const newDiscardPile = [...game.discardPile, ...cardsToPlay];
@@ -577,7 +582,7 @@ export function drawCardAction(
         const { cards, game: stateAfterDraw } = drawCards(game, game.currentDrawStack);
         const accumulatedDrawnCards = cards;
 
-        const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, ...accumulatedDrawnCards]);
+        const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, ...accumulatedDrawnCards], game.settings);
 
         const newGame: GameState = {
             ...stateAfterDraw,
@@ -629,7 +634,7 @@ export function drawCardAction(
             }
         }
 
-        const updatedPlayers = updatePlayerHand(currentState.players, playerId, [...player.hand, ...drawnCards]);
+        const updatedPlayers = updatePlayerHand(currentState.players, playerId, [...player.hand, ...drawnCards], game.settings);
 
         const newGame: GameState = {
             ...currentState,
@@ -663,7 +668,7 @@ export function drawCardAction(
     const drawnCard = drawnCards[0];
     const newCardsDrawnCount = game.cardsDrawnThisTurn + 1;
 
-    const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard]);
+    const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard], game.settings);
 
     // If it was the 3rd draw, the turn is skipped automatically
     const shouldSkip = newCardsDrawnCount >= 3;
@@ -697,8 +702,8 @@ export function sayTres(
     }
 
     const targetCount = game.settings.tresRuleset ? 3 : 1;
-    if (player.hand.length !== targetCount) {
-        return { success: false, game, error: `Can only say TRES with ${targetCount} card(s)` };
+    if (player.hand.length > targetCount) {
+        return { success: false, game, error: `Can only say TRES with ${targetCount} or fewer card(s)` };
     }
 
     const updatedPlayers = game.players.map((p) =>
@@ -732,7 +737,7 @@ export function challengeTres(
     const now = Date.now();
     const isGraceActive = target.tresGraceExpiresAt && now < target.tresGraceExpiresAt;
 
-    if (target.hand.length !== targetCount || target.hasSaidTres || isGraceActive) {
+    if (target.hand.length > targetCount || target.hasSaidTres || isGraceActive) {
         return { success: false, game, error: isGraceActive ? 'Grace period active' : 'Invalid challenge' };
     }
 
@@ -850,7 +855,7 @@ export function handleTurnTimeout(
     const { cards: drawnCards, game: afterDraw } = drawCards(game, penaltyCount);
 
     // Add cards to current player's hand
-    const updatedPlayers = updatePlayerHand(afterDraw.players, currentPlayer.id, [...currentPlayer.hand, ...drawnCards]);
+    const updatedPlayers = updatePlayerHand(afterDraw.players, currentPlayer.id, [...currentPlayer.hand, ...drawnCards], game.settings);
 
     // Move to next player, reset turn timer and draw tracking
     const newGameState: GameState = {
