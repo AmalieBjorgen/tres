@@ -235,7 +235,7 @@ export function calculateTurnDuration(game: GameState): number {
     // Wait, the prompt says: "Make the round timer shorter, like 10 seconds, and if you have more than 10 cards it scales with each card up to 30 seconds"
     // "E.g. 20 cards means 20 second timer, 5 cards means 5 seconds timer, 40 cards means 30 seconds timer"
     // This implies duration = handSize, capped at 30.
-    let duration = Math.min(Math.max(handSize, 10), 30);
+    let duration = Math.min(Math.max(handSize, 15), 35);
 
     // Add grace period (5s) if the last action was a mass hand redistribution
     const lastAction = game.lastAction;
