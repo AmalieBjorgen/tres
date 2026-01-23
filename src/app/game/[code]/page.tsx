@@ -189,7 +189,9 @@ export default function GamePage() {
     };
 
     const handleToggleCard = (cardId: string) => {
-        if (!game || !playerId || !game.isMyTurn) return;
+        if (!game || !playerId) return;
+        const canJumpIn = game.settings.jumpInRule;
+        if (!game.isMyTurn && !canJumpIn) return;
 
         const card = game.myHand.find((c) => c.id === cardId);
         if (!card) return;
@@ -563,6 +565,7 @@ export default function GamePage() {
                         currentDrawStack={game.currentDrawStack}
                         playingCardIds={playingCardIds}
                         cardsDrawnThisTurn={game.cardsDrawnThisTurn}
+                        jumpInRule={game.settings.jumpInRule}
                     />
                 </div>
             </main>

@@ -18,6 +18,7 @@ interface HandProps {
     currentDrawStack?: number;
     playingCardIds?: string[];
     cardsDrawnThisTurn?: number;
+    jumpInRule?: boolean;
 }
 
 const PlayIcon = () => (
@@ -45,6 +46,7 @@ export function Hand({
     currentDrawStack = 0,
     playingCardIds = [],
     cardsDrawnThisTurn = 0,
+    jumpInRule = false,
 }: HandProps) {
     const [sortMode, setSortMode] = useState<'color' | 'value'>('color');
     const [newCardIds, setNewCardIds] = useState<Set<string>>(new Set());
@@ -176,7 +178,17 @@ export function Hand({
                         const isSelected = selectedCardIds.includes(card.id);
                         const isNew = newCardIds.has(card.id);
                         const isPlaying = playingCardIds.includes(card.id) || ghostCards.some(gc => gc.id === card.id);
-                        let isPlayable = isMyTurn && canPlayCard(card, topCard, currentColor);
+
+                        let isPlayable = false;
+                        if (isMyTurn) {
+                            isPlayable = canPlayCard(card, topCard, currentColor);
+                        } else if (jumpInRule && selectedCardIds.length <= 1) {
+                            // Jump-in: Exact match (color AND value/type)
+                            const topColor = topCard.color || currentColor;
+                            isPlayable = card.type === topCard.type &&
+                                card.color === topColor &&
+                                (card.type !== 'number' || card.value === topCard.value);
+                        }
 
                         if (isMyTurn && selectedCardIds.length > 0) {
                             const firstSelectedId = selectedCardIds[0];
@@ -211,7 +223,7 @@ export function Hand({
                 </div>
             </div>
 
-            {isMyTurn && (
+            {(isMyTurn || (jumpInRule && selectedCardIds.length > 0)) && (
                 <div className={styles.handActions}>
                     <button
                         className={styles.sortButton}
