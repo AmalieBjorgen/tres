@@ -244,159 +244,161 @@ export default function LobbyPage() {
                 )}
             </div>
 
-            <div className={styles.playersSection}>
-                <h2 className={styles.playersSectionTitle}>
-                    Players
-                    <span className={styles.playerCount}>
-                        ({lobby.players.length}/{lobby.maxPlayers})
-                    </span>
-                </h2>
-                <div className={styles.playersList}>
-                    {lobby.players.map((player) => (
-                        <div key={player.id} className={styles.playerItem}>
-                            <div className={styles.playerAvatar}>
-                                {player.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className={styles.playerInfo}>
-                                <div className={styles.playerName}>
-                                    {player.name}
-                                    {player.isHost && (
-                                        <span className={`${styles.playerBadge} ${styles.badgeHost}`}>
-                                            HOST
-                                        </span>
-                                    )}
-                                    {player.id === playerId && (
-                                        <span className={`${styles.playerBadge} ${styles.badgeYou}`}>
-                                            YOU
-                                        </span>
-                                    )}
+            <div className={styles.lobbyMain}>
+                <div className={styles.playersSection}>
+                    <h2 className={styles.playersSectionTitle}>
+                        Players
+                        <span className={styles.playerCount}>
+                            ({lobby.players.length}/{lobby.maxPlayers})
+                        </span>
+                    </h2>
+                    <div className={styles.playersList}>
+                        {lobby.players.map((player) => (
+                            <div key={player.id} className={styles.playerItem}>
+                                <div className={styles.playerAvatar}>
+                                    {player.name.charAt(0).toUpperCase()}
                                 </div>
-                                <p className={styles.playerJoined}>
-                                    Joined {new Date(player.joinedAt).toLocaleTimeString()}
+                                <div className={styles.playerInfo}>
+                                    <div className={styles.playerName}>
+                                        {player.name}
+                                        {player.isHost && (
+                                            <span className={`${styles.playerBadge} ${styles.badgeHost}`}>
+                                                HOST
+                                            </span>
+                                        )}
+                                        {player.id === playerId && (
+                                            <span className={`${styles.playerBadge} ${styles.badgeYou}`}>
+                                                YOU
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className={styles.playerJoined}>
+                                        Joined {new Date(player.joinedAt).toLocaleTimeString()}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className={styles.settingsSection}>
+                    <h2 className={styles.settingsSectionTitle}>
+                        ⚙️ Game Rules
+                    </h2>
+                    <div className={styles.settingsList}>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Tres Ruleset</p>
+                                <p className={styles.settingDescription}>
+                                    Win by playing 3+ cards at once. Call TRES! at 3 cards remaining.
                                 </p>
                             </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.tresRuleset}
+                                    onChange={(e) => handleUpdateSettings('tresRuleset', e.target.checked)}
+                                    disabled={!isHost}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                    ))}
-                </div>
-            </div>
 
-            <div className={styles.settingsSection}>
-                <h2 className={styles.settingsSectionTitle}>
-                    ⚙️ Game Rules
-                </h2>
-                <div className={styles.settingsList}>
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Tres Ruleset</p>
-                            <p className={styles.settingDescription}>
-                                Win by playing 3+ cards at once. Call TRES! at 3 cards remaining.
-                            </p>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Rule 0 (Swap Hands)</p>
+                                <p className={styles.settingDescription}>
+                                    Playing a 0 makes everyone swap hands in the current play direction.
+                                </p>
+                            </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.swapOnZero}
+                                    onChange={(e) => handleUpdateSettings('swapOnZero', e.target.checked)}
+                                    disabled={!isHost}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.tresRuleset}
-                                onChange={(e) => handleUpdateSettings('tresRuleset', e.target.checked)}
-                                disabled={!isHost}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
-                    </div>
 
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Rule 0 (Swap Hands)</p>
-                            <p className={styles.settingDescription}>
-                                Playing a 0 makes everyone swap hands in the current play direction.
-                            </p>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Rule 7 (Trade Hands)</p>
+                                <p className={styles.settingDescription}>
+                                    Playing a 7 lets you trade your hand with another player of your choice.
+                                </p>
+                            </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.swapOnSeven}
+                                    onChange={(e) => handleUpdateSettings('swapOnSeven', e.target.checked)}
+                                    disabled={!isHost}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.swapOnZero}
-                                onChange={(e) => handleUpdateSettings('swapOnZero', e.target.checked)}
-                                disabled={!isHost}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
-                    </div>
 
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Rule 7 (Trade Hands)</p>
-                            <p className={styles.settingDescription}>
-                                Playing a 7 lets you trade your hand with another player of your choice.
-                            </p>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Jump-in Rule</p>
+                                <p className={styles.settingDescription}>
+                                    Play out of turn if you have an exact match (color and value) to the top card.
+                                </p>
+                            </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.jumpInRule}
+                                    onChange={(e) => handleUpdateSettings('jumpInRule', e.target.checked)}
+                                    disabled={!isHost}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.swapOnSeven}
-                                onChange={(e) => handleUpdateSettings('swapOnSeven', e.target.checked)}
-                                disabled={!isHost}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
-                    </div>
 
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Jump-in Rule</p>
-                            <p className={styles.settingDescription}>
-                                Play out of turn if you have an exact match (color and value) to the top card.
-                            </p>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Draw Until Play</p>
+                                <p className={styles.settingDescription}>
+                                    When drawing, you keep drawing until you find a playable card.
+                                </p>
+                            </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.drawUntilPlay}
+                                    onChange={(e) => handleUpdateSettings('drawUntilPlay', e.target.checked)}
+                                    disabled={!isHost}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.jumpInRule}
-                                onChange={(e) => handleUpdateSettings('jumpInRule', e.target.checked)}
-                                disabled={!isHost}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
-                    </div>
 
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Draw Until Play</p>
-                            <p className={styles.settingDescription}>
-                                When drawing, you keep drawing until you find a playable card.
-                            </p>
+                        <div className={styles.settingItem}>
+                            <div className={styles.settingInfo}>
+                                <p className={styles.settingName}>Forced Match</p>
+                                <p className={styles.settingDescription}>
+                                    If you have a playable card in your hand, you MUST play it (no drawing).
+                                </p>
+                            </div>
+                            <label className={styles.settingToggle}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.hiddenInput}
+                                    checked={lobby.settings.forcedMatch}
+                                    onChange={(e) => handleUpdateSettings('forcedMatch', e.target.checked)}
+                                    disabled={!isHost || isStarting}
+                                />
+                                <span className={styles.switch}></span>
+                            </label>
                         </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.drawUntilPlay}
-                                onChange={(e) => handleUpdateSettings('drawUntilPlay', e.target.checked)}
-                                disabled={!isHost}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
-                    </div>
-
-                    <div className={styles.settingItem}>
-                        <div className={styles.settingInfo}>
-                            <p className={styles.settingName}>Forced Match</p>
-                            <p className={styles.settingDescription}>
-                                If you have a playable card in your hand, you MUST play it (no drawing).
-                            </p>
-                        </div>
-                        <label className={styles.settingToggle}>
-                            <input
-                                type="checkbox"
-                                className={styles.hiddenInput}
-                                checked={lobby.settings.forcedMatch}
-                                onChange={(e) => handleUpdateSettings('forcedMatch', e.target.checked)}
-                                disabled={!isHost || isStarting}
-                            />
-                            <span className={styles.switch}></span>
-                        </label>
                     </div>
                 </div>
             </div>

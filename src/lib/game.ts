@@ -64,7 +64,7 @@ export function createLobby(hostName: string): { lobby: Lobby; hostId: string; h
             },
         ],
         createdAt: Date.now(),
-        maxPlayers: 15,
+        maxPlayers: 100,
         settings: { ...DEFAULT_SETTINGS },
     };
     return { lobby, hostId, hostToken };
@@ -100,13 +100,7 @@ export function addPlayerToLobby(lobby: Lobby, playerName: string): { lobby: Lob
 // Initialize a new game from a lobby
 export function initializeGame(lobby: Lobby): GameState {
     const playerCount = lobby.players.length;
-    let numDecks = 1;
-
-    if (playerCount > 10) {
-        numDecks = 3;
-    } else if (playerCount > 6) {
-        numDecks = 2;
-    }
+    const numDecks = Math.max(1, Math.ceil(playerCount / 5));
 
     const deck = shuffleDeck(createDeck(numDecks));
 

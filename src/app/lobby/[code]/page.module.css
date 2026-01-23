@@ -83,11 +83,21 @@
     margin-top: var(--spacing-sm);
 }
 
+/* Main Layout Container */
+.lobbyMain {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-2xl);
+    width: 100%;
+    max-width: 1200px;
+    align-items: flex-start;
+}
+
 /* Players list */
 .playersSection {
-    width: 100%;
-    max-width: 500px;
-    margin-bottom: var(--spacing-xl);
+    flex: 2;
+    min-width: 0;
+    /* Allow shrinking */
 }
 
 .playersSectionTitle {
@@ -106,16 +116,33 @@
 }
 
 .playersList {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-md);
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+/* Custom scrollbar for players list */
+.playersList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.playersList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.playersList::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
 }
 
 .playerItem {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
@@ -135,33 +162,40 @@
 }
 
 .playerAvatar {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: var(--bg-tertiary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
+    font-size: 0.875rem;
     color: var(--text-secondary);
 }
 
 .playerInfo {
     flex: 1;
+    min-width: 0;
 }
 
 .playerName {
     font-weight: 600;
+    font-size: 0.9375rem;
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .playerBadge {
     font-size: 0.625rem;
-    padding: 2px 6px;
+    padding: 1px 4px;
     border-radius: var(--radius-sm);
     font-weight: 700;
+    flex-shrink: 0;
 }
 
 .badgeHost {
@@ -181,13 +215,14 @@
 
 /* Settings */
 .settingsSection {
-    width: 100%;
-    max-width: 500px;
-    margin-bottom: var(--spacing-xl);
+    flex: 1;
+    max-width: 400px;
     padding: var(--spacing-lg);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-xl);
+    position: sticky;
+    top: var(--spacing-xl);
 }
 
 .settingsSectionTitle {
@@ -336,6 +371,23 @@ input:checked+.switch:before {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .lobbyMain {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .settingsSection {
+        max-width: none;
+        position: static;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .playersSection {
+        margin-bottom: var(--spacing-xl);
+    }
+}
+
 @media (max-width: 768px) {
     .code {
         font-size: 1.75rem;
