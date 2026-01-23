@@ -225,6 +225,25 @@ export function getCurrentPlayer(game: GameState): Player {
     return game.players[game.currentPlayerIndex];
 }
 
+/**
+ * Calculate the turn duration in seconds based on the current player's hand size.
+ */
+export function calculateTurnDuration(game: GameState): number {
+    const player = getCurrentPlayer(game);
+    const handSize = player.hand.length;
+    // Scale: 10s base for <= 10 cards, then +1s per card up to 30s.
+    // User requested: "like 10 seconds, and if you have more than 10 cards it scales with each card up to 30 seconds"
+    // "20 cards means 20 second timer, 5 cards means 5 seconds timer, 40 cards means 30 seconds timer"
+    // So: duration = handSize, clamped between [min_requested?, 30]
+    // If 5 cards means 5s, then it seems strictly handSize up to max 30.
+    // If < 10 cards means 10s, that contradicts "5 cards means 5s".
+    // I will use: Math.min(Math.max(handSize, 5), 30) or just Math.min(Math.max(handSize, 5), 30)
+    // Wait, the prompt says: "Make the round timer shorter, like 10 seconds, and if you have more than 10 cards it scales with each card up to 30 seconds"
+    // "E.g. 20 cards means 20 second timer, 5 cards means 5 seconds timer, 40 cards means 30 seconds timer"
+    // This implies duration = handSize, capped at 30.
+    return Math.min(Math.max(handSize, 5), 30);
+}
+
 // Get top card of discard pile
 export function getTopCard(game: GameState): Card {
     return game.discardPile[game.discardPile.length - 1];
@@ -792,7 +811,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
         lastAction: game.lastAction,
         isMyTurn: playerIndex === game.currentPlayerIndex,
         turnStartedAt: game.turnStartedAt,
-        turnDuration: TURN_DURATION_SECONDS,
+        turnDuration: calculateTurnDuration(game),
         currentDrawStack: game.currentDrawStack,
         podium: game.podium,
         actionHistory: game.actionHistory,
@@ -829,7 +848,7 @@ export function getPublicGameState(game: GameState): PublicGameState {
         winnerId: game.winnerId,
         lastAction: game.lastAction,
         turnStartedAt: game.turnStartedAt,
-        turnDuration: TURN_DURATION_SECONDS,
+        turnDuration: calculateTurnDuration(game),
         currentDrawStack: game.currentDrawStack,
         podium: game.podium,
         actionHistory: game.actionHistory,
@@ -881,7 +900,7 @@ export function handleTurnTimeout(
 export function isTurnTimedOut(game: GameState): boolean {
     if (game.status !== 'playing') return false;
     const elapsed = (Date.now() - game.turnStartedAt) / 1000;
-    return elapsed >= TURN_DURATION_SECONDS;
+    return elapsed >= calculateTurnDuration(game);
 }
 
 // Remove player from lobby
