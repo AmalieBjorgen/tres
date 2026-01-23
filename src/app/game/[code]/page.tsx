@@ -106,10 +106,15 @@ export default function GamePage() {
                         };
                     });
 
-                    // If it was a swap or we were skipped, we might still want to fetch full state to be sure
-                    // especially for Rule 7 trades which change our hand.
-                    const isPrivateChange = update.action === 'leave' || (update.game.lastAction && update.game.lastAction.swapTargetId === storedPlayerId);
-                    if (isPrivateChange || update.playerId === storedPlayerId) {
+                    // Optimize refetches: avoid mass refetches during Communism/Revolution
+                    const lastAction = update.game.lastAction;
+                    const wasMassRedistribution = lastAction?.wasCommunism || lastAction?.wasRevolution || lastAction?.wasSwapAll;
+                    const wasTargeted = lastAction?.swapTargetId === storedPlayerId;
+                    const wasMyAction = update.playerId === storedPlayerId;
+                    const isLeave = update.action === 'leave';
+
+                    // Only refetch when truly necessary
+                    if (isLeave || wasTargeted || (wasMassRedistribution && !wasMyAction)) {
                         fetchGame(storedPlayerId, storedPlayerToken);
                     }
                 } else {
