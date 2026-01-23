@@ -726,9 +726,9 @@ export function drawCardAction(
         return { success: true, game: recordAction(newGame, action), drawnCards };
     }
 
-    // 4. Normal draw (draw 1 card, up to 3 times)
-    if (game.cardsDrawnThisTurn >= 3) {
-        return { success: false, game, error: 'Already drawn 3 cards this turn' };
+    // 4. Normal draw (draw 1 card, up to 2 times)
+    if (game.cardsDrawnThisTurn >= 2) {
+        return { success: false, game, error: 'Already drawn 2 cards this turn' };
     }
 
     const { cards: drawnCards, game: stateAfterDraw } = drawCards(game, 1);
@@ -742,8 +742,8 @@ export function drawCardAction(
     const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard], game.settings)
         .map(p => p.id === playerId ? { ...p, consecutiveTimeouts: 0 } : p);
 
-    // If it was the 3rd draw, the turn is skipped automatically
-    const shouldSkip = newCardsDrawnCount >= 3;
+    // If it was the 2nd draw, the turn is skipped automatically
+    const shouldSkip = newCardsDrawnCount >= 2;
 
     const newGame: GameState = {
         ...stateAfterDraw,
@@ -920,7 +920,7 @@ export function handleTurnTimeout(
     const currentPlayer = getCurrentPlayer(game);
     const handSize = currentPlayer.hand.length;
     // Penalty is half the hand size (min 2, max 5) + stack
-    const basePenalty = Math.max(2, Math.min(5, Math.floor(handSize / 2)));
+    const basePenalty = Math.max(1, Math.min(3, Math.floor(handSize / 4)));
     const penaltyCount = basePenalty + game.currentDrawStack;
 
     // Draw penalty cards
