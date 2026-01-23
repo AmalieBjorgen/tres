@@ -46,9 +46,14 @@ export function Card({
     }
 
     const effectiveColor = colorOverride || card.color;
-    const colorClass = effectiveColor
+    let colorClass = effectiveColor
         ? styles[`card${effectiveColor.charAt(0).toUpperCase()}${effectiveColor.slice(1)}`]
         : styles.cardWild;
+
+    if (!effectiveColor) {
+        if (card.type === 'communism') colorClass = styles.cardCommunism;
+        if (card.type === 'revolution') colorClass = styles.cardRevolution;
+    }
 
     const symbol = getCardSymbol(card);
 

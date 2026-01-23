@@ -53,6 +53,16 @@ export function createDeck(numDecks: number = 1): Card[] {
         for (let i = 0; i < 4; i++) {
             deck.push(createCard('wild_draw_four', null, null));
         }
+
+        // Two Communism cards
+        for (let i = 0; i < 2; i++) {
+            deck.push(createCard('communism', null, null));
+        }
+
+        // Two Revolution cards
+        for (let i = 0; i < 2; i++) {
+            deck.push(createCard('revolution', null, null));
+        }
     }
 
     return deck;
@@ -71,7 +81,7 @@ export function shuffleDeck(deck: Card[]): Card[] {
 // Check if a card can be played on top of another
 export function canPlayCard(card: Card, topCard: Card, currentColor: CardColor): boolean {
     // Wild cards can always be played
-    if (card.type === 'wild' || card.type === 'wild_draw_four') {
+    if (card.type === 'wild' || card.type === 'wild_draw_four' || card.type === 'communism' || card.type === 'revolution') {
         return true;
     }
 
@@ -100,6 +110,12 @@ export function getCardDisplayName(card: Card): string {
     }
     if (card.type === 'wild_draw_four') {
         return 'Wild +4';
+    }
+    if (card.type === 'communism') {
+        return 'Communism';
+    }
+    if (card.type === 'revolution') {
+        return 'Revolution';
     }
     if (card.type === 'number') {
         return `${card.value}`;
@@ -131,6 +147,10 @@ export function getCardSymbol(card: Card): string {
             return '★';
         case 'wild_draw_four':
             return '+4';
+        case 'communism':
+            return '☭';
+        case 'revolution':
+            return 'R';
         default:
             return '';
     }
@@ -138,7 +158,7 @@ export function getCardSymbol(card: Card): string {
 
 // Check if card is a wild card
 export function isWildCard(card: Card): boolean {
-    return card.type === 'wild' || card.type === 'wild_draw_four';
+    return card.type === 'wild' || card.type === 'wild_draw_four' || card.type === 'communism' || card.type === 'revolution';
 }
 
 // Check if card is an action card

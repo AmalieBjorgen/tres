@@ -6,7 +6,7 @@ export const TRES_GRACE_PERIOD_MS = 5000;
 export type CardColor = 'red' | 'blue' | 'green' | 'yellow';
 
 // Card types
-export type CardType = 'number' | 'skip' | 'reverse' | 'draw_two' | 'wild' | 'wild_draw_four';
+export type CardType = 'number' | 'skip' | 'reverse' | 'draw_two' | 'wild' | 'wild_draw_four' | 'communism' | 'revolution';
 
 // Game settings
 export interface GameSettings {
@@ -92,7 +92,9 @@ export type GameActionType =
     | 'say_tres'
     | 'challenge_tres'
     | 'choose_color'
-    | 'draw_three_skip';
+    | 'draw_three_skip'
+    | 'communism'
+    | 'revolution';
 
 export interface GameAction {
     type: GameActionType;
@@ -105,6 +107,8 @@ export interface GameAction {
     swapTargetId?: string; // For Rule 7 (Trade Hands)
     wasSwapAll?: boolean; // For Rule 0 (Swap Hands)
     wasJumpIn?: boolean; // For Jump-in rule
+    wasCommunism?: boolean; // For Communism card
+    wasRevolution?: boolean; // For Revolution card
 }
 
 // API Request/Response types

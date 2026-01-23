@@ -503,6 +503,47 @@ export function playCards(
         }
     }
 
+    // Handle Communism / Revolution
+    let wasCommunism = false;
+    let wasRevolution = false;
+
+    if (!isWinning && (firstCard.type === 'communism' || firstCard.type === 'revolution')) {
+        const activeIndices = finalPlayers
+            .map((p, i) => (!p.rank ? i : -1))
+            .filter(i => i !== -1);
+
+        if (activeIndices.length > 1) {
+            let allCards = activeIndices.flatMap(i => finalPlayers[i].hand);
+            allCards = shuffleDeck(allCards); // Shuffle collected cards
+
+            if (firstCard.type === 'communism') {
+                wasCommunism = true;
+                const newHands: Card[][] = activeIndices.map(() => []);
+                allCards.forEach((card, i) => {
+                    newHands[i % activeIndices.length].push(card);
+                });
+
+                activeIndices.forEach((idx, i) => {
+                    finalPlayers = updatePlayerHand(finalPlayers, finalPlayers[idx].id, newHands[i], game.settings);
+                });
+            } else if (firstCard.type === 'revolution') {
+                wasRevolution = true;
+                // Sort players by hand size (ascending)
+                const playerStats = activeIndices.map(idx => ({
+                    idx,
+                    count: finalPlayers[idx].hand.length
+                })).sort((a, b) => a.count - b.count);
+
+                const originalHands = playerStats.map(s => finalPlayers[s.idx].hand);
+                const reversedHands = [...originalHands].reverse();
+
+                playerStats.forEach((stat, i) => {
+                    finalPlayers = updatePlayerHand(finalPlayers, finalPlayers[stat.idx].id, reversedHands[i], game.settings);
+                });
+            }
+        }
+    }
+
     // Apply card effects
     let newGame: GameState = {
         ...game,
@@ -522,6 +563,8 @@ export function playCards(
         swapTargetId,
         wasSwapAll,
         wasJumpIn: isJumpIn,
+        wasCommunism,
+        wasRevolution,
         timestamp: Date.now(),
     };
 

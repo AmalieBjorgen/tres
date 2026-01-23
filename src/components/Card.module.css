@@ -51,6 +51,20 @@
     animation: gradientShift 3s ease infinite;
 }
 
+.cardCommunism .cardInner {
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #facc15 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 2s ease infinite;
+    border-color: #facc15;
+}
+
+.cardRevolution .cardInner {
+    background: linear-gradient(135deg, #000000 0%, #1e293b 40%, #991b1b 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 1.5s ease-in-out infinite;
+    border-color: #ef4444;
+}
+
 @keyframes gradientShift {
     0% {
         background-position: 0% 50%;
