@@ -37,6 +37,7 @@ export interface Player {
     hasSaidTres: boolean;
     tresGraceExpiresAt?: number | null;
     rank?: number; // 1, 2, 3...
+    consecutiveTimeouts?: number; // Track timeouts for auto-kick
 }
 
 // Game direction

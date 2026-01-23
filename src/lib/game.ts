@@ -449,7 +449,12 @@ export function playCards(
     const isJumpIn = game.currentPlayerIndex !== playerIndex;
 
     // Remove cards from player's hand and handle Tres grace period
-    const updatedPlayers = updatePlayerHand(game.players, playerId, playerHand, game.settings);
+    let updatedPlayers = updatePlayerHand(game.players, playerId, playerHand, game.settings);
+
+    // Reset timeout counter on successful action
+    updatedPlayers = updatedPlayers.map(p =>
+        p.id === playerId ? { ...p, consecutiveTimeouts: 0 } : p
+    );
 
     // Add cards to discard pile
     const newDiscardPile = [...game.discardPile, ...cardsToPlay];
@@ -638,7 +643,8 @@ export function drawCardAction(
         const { cards, game: stateAfterDraw } = drawCards(game, game.currentDrawStack);
         const accumulatedDrawnCards = cards;
 
-        const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, ...accumulatedDrawnCards], game.settings);
+        const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, ...accumulatedDrawnCards], game.settings)
+            .map(p => p.id === playerId ? { ...p, consecutiveTimeouts: 0 } : p);
 
         const newGame: GameState = {
             ...stateAfterDraw,
@@ -690,7 +696,8 @@ export function drawCardAction(
             }
         }
 
-        const updatedPlayers = updatePlayerHand(currentState.players, playerId, [...player.hand, ...drawnCards], game.settings);
+        const updatedPlayers = updatePlayerHand(currentState.players, playerId, [...player.hand, ...drawnCards], game.settings)
+            .map(p => p.id === playerId ? { ...p, consecutiveTimeouts: 0 } : p);
 
         const newGame: GameState = {
             ...currentState,
@@ -724,7 +731,8 @@ export function drawCardAction(
     const drawnCard = drawnCards[0];
     const newCardsDrawnCount = game.cardsDrawnThisTurn + 1;
 
-    const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard], game.settings);
+    const updatedPlayers = updatePlayerHand(stateAfterDraw.players, playerId, [...currentPlayer.hand, drawnCard], game.settings)
+        .map(p => p.id === playerId ? { ...p, consecutiveTimeouts: 0 } : p);
 
     // If it was the 3rd draw, the turn is skipped automatically
     const shouldSkip = newCardsDrawnCount >= 3;
@@ -910,8 +918,33 @@ export function handleTurnTimeout(
     // Draw penalty cards
     const { cards: drawnCards, game: afterDraw } = drawCards(game, penaltyCount);
 
-    // Add cards to current player's hand
-    const updatedPlayers = updatePlayerHand(afterDraw.players, currentPlayer.id, [...currentPlayer.hand, ...drawnCards], game.settings);
+    // Add cards to current player's hand and increment timeout counter
+    let updatedPlayers = updatePlayerHand(afterDraw.players, currentPlayer.id, [...currentPlayer.hand, ...drawnCards], game.settings);
+
+    // Increment consecutive timeout counter
+    updatedPlayers = updatedPlayers.map(p => {
+        if (p.id === currentPlayer.id) {
+            const timeouts = (p.consecutiveTimeouts || 0) + 1;
+            return { ...p, consecutiveTimeouts: timeouts };
+        }
+        return p;
+    });
+
+    // Check if player should be auto-kicked (4 consecutive timeouts)
+    const currentPlayerAfterUpdate = updatedPlayers.find(p => p.id === currentPlayer.id);
+    if (currentPlayerAfterUpdate && (currentPlayerAfterUpdate.consecutiveTimeouts || 0) >= 4) {
+        // Auto-kick the player
+        const kickResult = leaveGame({ ...afterDraw, players: updatedPlayers }, currentPlayer.id);
+        if (kickResult) {
+            const action: GameAction = {
+                type: 'draw_card',
+                playerId: currentPlayer.id,
+                cardCount: penaltyCount,
+                timestamp: Date.now(),
+            };
+            return { success: true, game: recordAction(kickResult, action) };
+        }
+    }
 
     // Move to next player, reset turn timer and draw tracking
     const newGameState: GameState = {
