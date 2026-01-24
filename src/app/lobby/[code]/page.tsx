@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lobby, LobbyPlayer } from '@/lib/types';
 import { subscribeToLobby } from '@/lib/pusherClient';
+import { playSound, SOUNDS, getMuted, setMuted } from '@/lib/sounds';
 import styles from './page.module.css';
 
 export default function LobbyPage() {
@@ -19,6 +20,7 @@ export default function LobbyPage() {
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
     const [isStarting, setIsStarting] = useState(false);
+    const [muted, setMutedState] = useState(false);
 
     const checkGameStarted = useCallback(async () => {
         try {
@@ -75,6 +77,7 @@ export default function LobbyPage() {
         }
         setPlayerId(storedPlayerId);
         setPlayerToken(storedPlayerToken);
+        setMutedState(getMuted());
 
         // Fetch initial lobby state
         fetchLobby();
@@ -83,8 +86,12 @@ export default function LobbyPage() {
         const unsubscribe = subscribeToLobby(code, (event, data) => {
             if (event === 'player-joined' || event === 'player-left' || event === 'lobby-updated') {
                 const eventData = data as { lobby: Lobby };
+                if (event === 'player-joined') {
+                    playSound(SOUNDS.PLAYER_JOIN);
+                }
                 setLobby(eventData.lobby);
             } else if (event === 'game-started') {
+                playSound(SOUNDS.GAME_START);
                 router.push(`/game/${code}`);
             }
         });
@@ -225,7 +232,20 @@ export default function LobbyPage() {
             </Link>
 
             <div className={styles.lobbyHeader}>
-                <h1 className={styles.lobbyTitle}>Game Lobby</h1>
+                <div className={styles.headerTop}>
+                    <h1 className={styles.lobbyTitle}>Game Lobby</h1>
+                    <button
+                        className={styles.muteToggle}
+                        onClick={() => {
+                            const newState = !muted;
+                            setMuted(newState);
+                            setMutedState(newState);
+                        }}
+                        title={muted ? 'Unmute' : 'Mute'}
+                    >
+                        {muted ? '🔇' : '🔊'}
+                    </button>
+                </div>
                 <p className={styles.lobbySubtitle}>
                     Share the code below with your friends to join!
                 </p>

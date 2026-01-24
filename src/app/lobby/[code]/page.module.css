@@ -17,11 +17,36 @@
 .lobbyTitle {
     font-size: 2rem;
     font-weight: 700;
-    margin-bottom: var(--spacing-sm);
     background: linear-gradient(135deg, var(--text-primary), var(--color-primary-light));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.headerTop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.muteToggle {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.muteToggle:hover {
+    background: var(--bg-secondary);
+    border-color: var(--color-primary);
 }
 
 .lobbySubtitle {
