@@ -16,7 +16,6 @@ import { ActionLog } from '@/components/ActionLog';
 import { PlayerPicker } from '@/components/PlayerPicker';
 import { ActiveRules } from '@/components/ActiveRules';
 import { getNextPlayerIndex } from '@/lib/game';
-import { playSound, SOUNDS, getMuted, setMuted } from '@/lib/sounds';
 import styles from './page.module.css';
 
 export default function GamePage() {
@@ -37,10 +36,8 @@ export default function GamePage() {
     const [currentEffect, setCurrentEffect] = useState<string | null>(null);
     const [isShaking, setIsShaking] = useState(false);
     const [showPlayerPicker, setShowPlayerPicker] = useState(false);
-    const [muted, setMutedState] = useState(false);
     const timeoutTriggeredRef = useRef<number | null>(null);
     const prevIsMyTurnRef = useRef(false);
-    const gameOverSoundPlayedRef = useRef(false);
 
     const fetchGame = useCallback(async (pid: string, ptoken: string) => {
         try {
@@ -77,7 +74,6 @@ export default function GamePage() {
         }
         setPlayerId(storedPlayerId);
         setPlayerToken(storedPlayerToken);
-        setMutedState(getMuted());
 
         fetchGame(storedPlayerId, storedPlayerToken);
 
@@ -151,7 +147,6 @@ export default function GamePage() {
         if (now - action.timestamp > 3000) return;
 
         if (action.type === 'play_card') {
-            playSound(SOUNDS.PLAY_CARD);
             if (game.topCard.type === 'reverse') {
                 setCurrentEffect('REVERSE!');
                 setTimeout(() => setCurrentEffect(null), 1500);
@@ -172,7 +167,6 @@ export default function GamePage() {
                 setTimeout(() => setCurrentEffect(null), 2000);
             }
         } else if (action.type === 'draw_card') {
-            playSound(SOUNDS.DRAW_CARD);
             if ((action.cardCount || 0) > 1) {
                 setIsShaking(true);
                 setTimeout(() => setIsShaking(false), 500);
@@ -180,13 +174,10 @@ export default function GamePage() {
         } else if (action.type === 'challenge_tres') {
             setCurrentEffect('CHALLENGED!');
             setIsShaking(true);
-            playSound(SOUNDS.ERROR);
             setTimeout(() => {
                 setCurrentEffect(null);
                 setIsShaking(false);
             }, 1000);
-        } else if (action.type === 'say_tres') {
-            playSound(SOUNDS.TRES_CALL);
         }
     }, [game?.lastAction?.timestamp]);
 
@@ -194,18 +185,11 @@ export default function GamePage() {
     useEffect(() => {
         if (game?.isMyTurn && !prevIsMyTurnRef.current) {
             setCurrentEffect('YOUR TURN');
-            playSound(SOUNDS.YOUR_TURN);
             setTimeout(() => setCurrentEffect(null), 2000);
         }
         prevIsMyTurnRef.current = !!game?.isMyTurn;
     }, [game?.isMyTurn]);
 
-    useEffect(() => {
-        if (game?.status === 'finished' && !gameOverSoundPlayedRef.current) {
-            playSound(SOUNDS.GAME_OVER);
-            gameOverSoundPlayedRef.current = true;
-        }
-    }, [game?.status]);
 
     const showActionMessage = (message: string) => {
         setActionMessage(message);
@@ -404,7 +388,6 @@ export default function GamePage() {
             }
 
             setGame(data.game);
-            playSound(SOUNDS.SUCCESS);
             showActionMessage('Challenge successful!');
         } catch (err) {
             showActionMessage('Failed to challenge');
@@ -447,7 +430,6 @@ export default function GamePage() {
                 if (data.game) {
                     setGame(data.game);
                     const count = 5 + (game.currentDrawStack || 0);
-                    playSound(SOUNDS.ERROR);
                     showActionMessage(`Time ran out! Drew ${count} penalty cards.`);
                 }
             })
@@ -520,17 +502,6 @@ export default function GamePage() {
                         title="Action History"
                     >
                         📜
-                    </button>
-                    <button
-                        className={styles.muteToggle}
-                        onClick={() => {
-                            const newState = !muted;
-                            setMuted(newState);
-                            setMutedState(newState);
-                        }}
-                        title={muted ? 'Unmute' : 'Mute'}
-                    >
-                        {muted ? '🔇' : '🔊'}
                     </button>
                     <TresButton
                         canSayTres={canSayTres}
